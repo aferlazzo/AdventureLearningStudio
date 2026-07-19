@@ -1,66 +1,15 @@
-import { useState } from "react";
-import type { Adventure, AdventureSectionKey } from "../models/adventure";
+import type { Adventure } from "../models/adventure";
 import { ProgressPanel } from "../components/ProgressPanel";
-import { ContinuePanel } from "../components/ContinuePanel";
-import { AuthoringPanel } from "../components/AuthoringPanel";
+import { ActionCard } from "../components/ActionCard";
 
 interface WorkspacePageProps {
   adventure: Adventure;
   onBack: () => void;
   onDelete: (id: string) => void;
-  onUpdate: (adventure: Adventure) => void;
 }
 
-export function WorkspacePage({
-  adventure,
-  onBack,
-  onDelete,
-  onUpdate
-}: WorkspacePageProps) {
-  const [activeSection, setActiveSection] = useState<AdventureSectionKey | null>(null);
-
-  function saveAnswers(answers: string[]) {
-    if (!activeSection) return;
-
-    onUpdate({
-      ...adventure,
-      updated: new Date().toISOString(),
-      sections: {
-        ...adventure.sections,
-        [activeSection]: {
-          ...adventure.sections[activeSection],
-          answers,
-          content: answers.filter(Boolean).join("\n\n")
-        }
-      }
-    });
-  }
-
-  function completeSection(answers: string[]) {
-    if (!activeSection) return;
-
-    const sectionName = activeSection.charAt(0).toUpperCase() + activeSection.slice(1);
-    const sections = {
-      ...adventure.sections,
-      [activeSection]: {
-        complete: true,
-        answers,
-        content: answers.filter(Boolean).join("\n\n")
-      }
-    };
-
-    const allComplete = Object.values(sections).every((section) => section.complete);
-
-    onUpdate({
-      ...adventure,
-      updated: new Date().toISOString(),
-      status: allComplete ? "complete" : "draft",
-      sections,
-      activity: [`${sectionName} completed`, ...adventure.activity]
-    });
-
-    setActiveSection(null);
-  }
+export function WorkspacePage({ adventure, onBack, onDelete }: WorkspacePageProps) {
+  const publishLocked = adventure.status === "draft";
 
   return (
     <main className="page-shell">
@@ -80,39 +29,61 @@ export function WorkspacePage({
       <section className="workspace-grid">
         <ProgressPanel adventure={adventure} />
 
-        {activeSection ? (
-          <AuthoringPanel
-            section={activeSection}
-            savedAnswers={adventure.sections[activeSection].answers ?? []}
-            onSaveAnswer={saveAnswers}
-            onComplete={completeSection}
-            onExit={() => setActiveSection(null)}
+        <section className="panel workspace-actions">
+          <h2>What would you like to do?</h2>
+          <ActionCard
+            title="Continue Authoring"
+            description="Resume the Conversation Engine at the next unfinished section."
+            buttonLabel="Resume"
+            disabled
           />
-        ) : (
-          <ContinuePanel
-            adventure={adventure}
-            onContinue={setActiveSection}
+          <ActionCard
+            title="Adventure Editor"
+            description="Edit completed sections directly."
+            buttonLabel="Open Editor"
+            disabled
           />
-        )}
+          <ActionCard
+            title="Preview"
+            description="Read the Adventure as a learner will experience it."
+            buttonLabel="Preview"
+            disabled
+          />
+          <ActionCard
+            title="Publishing Center"
+            description="Generate Missions, Storyboards, Websites, and PDFs."
+            buttonLabel={publishLocked ? "Locked until complete" : "Open Publishing"}
+            disabled
+          />
+          <ActionCard
+            title="Learning Insights"
+            description="Review gaps, duplicated concepts, and recommended follow-up Adventures."
+            buttonLabel="Coming Soon"
+            disabled
+          />
+          <ActionCard
+            title="Delete Adventure"
+            description="Permanently remove this Adventure from this browser."
+            buttonLabel="Delete"
+            danger
+            onClick={() => onDelete(adventure.id)}
+          />
+        </section>
 
         <aside className="panel activity-panel">
           <h2>Recent Activity</h2>
           <ul>
-            {adventure.activity.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
+            {adventure.activity.map((item) => <li key={item}>{item}</li>)}
           </ul>
           <hr />
-          <h2>Workspace Modes</h2>
+          <h2>Coming Later</h2>
           <ul>
-            <li>Dashboard</li>
-            <li className={activeSection ? "active-mode" : ""}>Authoring</li>
-            <li>Editing — later</li>
-            <li>Preview — later</li>
-            <li>Publishing — later</li>
+            <li>Version History</li>
+            <li>Notes</li>
+            <li>Bookmarks</li>
+            <li>AI Mentor</li>
+            <li>Collaboration</li>
           </ul>
-          <hr />
-          <button className="danger-link" onClick={() => onDelete(adventure.id)}>
-            Delete Adventure
-          </button>
         </aside>
       </section>
     </main>

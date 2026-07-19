@@ -11,15 +11,6 @@ export default function App() {
 
   const activeAdventure = adventures.find((adventure) => adventure.id === activeAdventureId);
 
-  function persist(next: Adventure[]) {
-    setAdventures(next);
-    saveAdventures(next);
-  }
-
-  function updateAdventure(updated: Adventure) {
-    persist(adventures.map((item) => item.id === updated.id ? updated : item));
-  }
-
   function createAdventure() {
     const now = new Date().toISOString();
     const adventure: Adventure = {
@@ -34,18 +25,20 @@ export default function App() {
       tags: [],
       domain: "General",
       sections: {
-        situation: { complete: false, content: "", answers: [] },
-        anxiety: { complete: false, content: "", answers: [] },
-        decision: { complete: false, content: "", answers: [] },
-        experience: { complete: false, content: "", answers: [] },
-        consequences: { complete: false, content: "", answers: [] },
-        capability: { complete: false, content: "", answers: [] }
+        situation: { complete: false, content: "" },
+        anxiety: { complete: false, content: "" },
+        decision: { complete: false, content: "" },
+        experience: { complete: false, content: "" },
+        consequences: { complete: false, content: "" },
+        capability: { complete: false, content: "" }
       },
       notes: [],
       activity: ["Adventure created"]
     };
 
-    persist([adventure, ...adventures]);
+    const next = [adventure, ...adventures];
+    setAdventures(next);
+    saveAdventures(next);
     setActiveAdventureId(adventure.id);
   }
 
@@ -56,7 +49,9 @@ export default function App() {
     const confirmed = window.confirm(`Delete "${adventure.title}"? This cannot be undone.`);
     if (!confirmed) return;
 
-    persist(adventures.filter((item) => item.id !== id));
+    const next = adventures.filter((item) => item.id !== id);
+    setAdventures(next);
+    saveAdventures(next);
     setActiveAdventureId(null);
   }
 
@@ -68,7 +63,6 @@ export default function App() {
           adventure={activeAdventure}
           onBack={() => setActiveAdventureId(null)}
           onDelete={deleteAdventure}
-          onUpdate={updateAdventure}
         />
       ) : (
         <LibraryPage
