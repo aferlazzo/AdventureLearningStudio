@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Adventure Learning Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>Adventure Learning Studio</h1>
+      <p>Adventure Library · Sprint 1</p>
+    </div>
+    <button id="newAdventureBtn" class="primary">New Adventure</button>
+  </header>
+
+  <main class="app-shell">
+    <section class="toolbar" aria-label="Adventure controls">
+      <input id="searchInput" type="search" placeholder="Search adventures">
+      <select id="statusFilter" aria-label="Filter by status">
+        <option value="all">All statuses</option>
+        <option value="draft">Draft</option>
+        <option value="complete">Complete</option>
+        <option value="published">Published</option>
+      </select>
+      <button id="exportBtn">Export Library</button>
+      <button id="importBtn">Import Library</button>
+      <input id="importFile" type="file" accept=".json" hidden>
+    </section>
+
+    <section class="library-layout">
+      <aside class="sidebar">
+        <h2>Library</h2>
+        <div class="library-stats" id="libraryStats"></div>
+      </aside>
+
+      <section>
+        <div id="emptyState" class="empty-state" hidden>
+          <h2>No Adventures found</h2>
+          <p>Create your first Adventure or change the current filters.</p>
+          <button id="emptyNewBtn" class="primary">Create Adventure</button>
+        </div>
+        <div id="adventureGrid" class="adventure-grid"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="adventureDialog">
+    <form method="dialog" id="adventureForm">
+      <div class="dialog-header">
+        <div>
+          <h2 id="dialogTitle">New Adventure</h2>
+          <p>Create the library record. The Conversation Engine will fill the Adventure later.</p>
+        </div>
+        <button class="icon-button" value="cancel" aria-label="Close">×</button>
+      </div>
+
+      <input id="adventureId" type="hidden">
+
+      <label>
+        Title
+        <input id="titleInput" required maxlength="100">
+      </label>
+
+      <label>
+        Summary
+        <textarea id="summaryInput" rows="4" maxlength="500"></textarea>
+      </label>
+
+      <div class="form-row">
+        <label>
+          Status
+          <select id="statusInput">
+            <option value="draft">Draft</option>
+            <option value="complete">Complete</option>
+            <option value="published">Published</option>
+          </select>
+        </label>
+
+        <label>
+          Domain
+          <input id="domainInput" placeholder="Driver Confidence Guide">
+        </label>
+      </div>
+
+      <label>
+        Tags
+        <input id="tagsInput" placeholder="safety, driving, hazards">
+        <span class="hint">Separate tags with commas.</span>
+      </label>
+
+      <div class="dialog-actions">
+        <button value="cancel">Cancel</button>
+        <button id="saveAdventureBtn" class="primary" value="default">Save Adventure</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog">
+    <form method="dialog">
+      <h2>Delete Adventure?</h2>
+      <p id="confirmMessage"></p>
+      <div class="dialog-actions">
+        <button value="cancel">Cancel</button>
+        <button id="confirmDeleteBtn" class="danger" value="default">Delete</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adventure Learning Studio v2.1</title>
+  <style>
+    :root{
+      --bg:#f4f6f8; --panel:#ffffff; --text:#1f2933; --muted:#667085;
+      --line:#d9dee5; --accent:#2457d6; --accent-soft:#eaf0ff; --good:#16835f;
+      --shadow:0 10px 30px rgba(31,41,51,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    button,input,textarea{font:inherit}
+    .app{min-height:100vh;display:grid;grid-template-columns:280px 1fr}
+    aside{background:#182230;color:#fff;padding:24px 18px;display:flex;flex-direction:column;gap:18px}
+    .brand h1{font-size:20px;margin:0 0 4px}
+    .brand p{font-size:13px;color:#bcc7d6;margin:0}
+    .new-btn{width:100%;padding:11px 14px;border:0;border-radius:8px;background:#fff;color:#182230;font-weight:600;cursor:pointer}
+    .adventure-list{display:flex;flex-direction:column;gap:8px;overflow:auto}
+    .adventure-item{padding:10px 12px;border-radius:8px;background:transparent;color:#dce3ec;cursor:pointer;border:1px solid transparent}
+    .adventure-item.active{background:#25344a;border-color:#41516a;color:#fff}
+    .adventure-item small{display:block;color:#9fb0c5;margin-top:4px}
+    .sidebar-actions{margin-top:auto;display:grid;gap:8px}
+    .sidebar-actions button{padding:9px;border-radius:7px;border:1px solid #4a5a70;background:transparent;color:#e9eef5;cursor:pointer}
+    main{padding:28px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .topbar h2{margin:0;font-size:24px}
+    .status{font-size:13px;color:var(--good);font-weight:600}
+    .phase-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px}
+    .phase{background:#e8ebef;border-radius:999px;padding:8px 12px;text-align:center;font-size:13px;color:#657080}
+    .phase.active{background:var(--accent-soft);color:var(--accent);font-weight:700}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+    .conversation{padding:26px}
+    .step-label{color:var(--accent);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .conversation h3{font-size:28px;margin:8px 0 12px}
+    .why{font-size:16px;line-height:1.55;color:#3d4857}
+    .example{margin:18px 0;padding:14px 16px;background:#f7f9fc;border-left:4px solid var(--accent);border-radius:8px}
+    .example strong{display:block;margin-bottom:6px}
+    label{display:block;font-weight:700;margin:18px 0 8px}
+    textarea{width:100%;min-height:150px;resize:vertical;padding:14px;border:1px solid #bfc7d2;border-radius:9px;line-height:1.5}
+    textarea:focus{outline:3px solid rgba(36,87,214,.15);border-color:var(--accent)}
+    .controls{display:flex;justify-content:space-between;gap:10px;margin-top:18px}
+    .controls .right{display:flex;gap:10px}
+    .btn{padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .reflection{display:none;margin-top:18px;padding:16px;border:1px solid #cfd8e5;background:#f8fbff;border-radius:10px}
+    .reflection.show{display:block}
+    .reflection h4{margin:0 0 8px}
+    .summary{padding:20px;position:sticky;top:20px;max-height:calc(100vh - 56px);overflow:auto}
+    .summary h3{margin-top:0}
+    .summary-section{padding:10px 0;border-bottom:1px solid #edf0f3}
+    .summary-section strong{display:block;font-size:13px;color:#556170;margin-bottom:4px}
+    .summary-section p{margin:0;white-space:pre-wrap;font-size:14px;line-height:1.45}
+    .empty{color:#98a2b3;font-style:italic}
+    .footer-note{font-size:12px;color:#7b8794;margin-top:14px}
+    .toast{position:fixed;right:24px;bottom:24px;background:#17202d;color:#fff;padding:12px 16px;border-radius:8px;opacity:0;transform:translateY(10px);transition:.2s}
+    .toast.show{opacity:1;transform:translateY(0)}
+    @media(max-width:900px){
+      .app{grid-template-columns:1fr}
+      aside{position:static}
+      .layout{grid-template-columns:1fr}
+      .summary{position:static;max-height:none}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <h1>Adventure Learning Studio</h1>
+      <p>Version 2.1</p>
+    </div>
+    <button class="new-btn" id="newAdventureBtn">+ New Adventure</button>
+    <div class="adventure-list" id="adventureList"></div>
+    <div class="sidebar-actions">
+      <button id="exportMdBtn">Export Markdown</button>
+      <button id="exportJsonBtn">Export JSON</button>
+      <button id="importBtn">Import JSON</button>
+      <input type="file" id="importFile" accept=".json" hidden>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <h2 id="adventureTitle">Untitled Adventure</h2>
+      <div class="status" id="saveStatus">Saved locally</div>
+    </div>
+
+    <div class="phase-row">
+      <div class="phase" data-phase="Discover">Discover</div>
+      <div class="phase" data-phase="Capture">Capture</div>
+      <div class="phase" data-phase="Build">Build</div>
+      <div class="phase" data-phase="Finish">Finish</div>
+    </div>
+
+    <div class="layout">
+      <section class="card conversation">
+        <div class="step-label" id="stepLabel"></div>
+        <h3 id="stepTitle"></h3>
+        <p class="why" id="stepWhy"></p>
+
+        <div class="example">
+          <strong>Example</strong>
+          <div id="stepExample"></div>
+        </div>
+
+        <label for="answer" id="stepQuestion"></label>
+        <textarea id="answer" placeholder="Write naturally. You do not need to format your answer."></textarea>
+
+        <div class="reflection" id="reflection">
+          <h4>Here is what I understood</h4>
+          <p id="reflectionText"></p>
+          <div class="controls">
+            <button class="btn" id="editReflectionBtn">Edit answer</button>
+            <button class="btn primary" id="confirmReflectionBtn">Yes, continue</button>
+          </div>
+        </div>
+
+        <div class="controls" id="mainControls">
+          <button class="btn" id="backBtn">Back</button>
+          <div class="right">
+            <button class="btn" id="saveBtn">Save</button>
+            <button class="btn primary" id="continueBtn">Continue</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card summary">
+        <h3>Adventure Summary</h3>
+        <div id="summaryContent"></div>
+        <div class="footer-note">Your work is automatically stored in this browser.</div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const steps = [
+  {key:"situation", title:"Discover the Situation", phase:"Discover",
+   why:"Every Adventure begins with one specific real-life situation. A concrete event gives the learner something they can recognize and act upon.",
+   example:"A driver notices a large piece of debris blocking the lane ahead.",
+   question:"Tell me about a real situation someone could face."},
+  {key:"anxiety", title:"Discover the Anxiety", phase:"Discover",
+   why:"The learner's uncertainty is what makes the Adventure necessary. Understanding it helps the lesson reduce fear instead of merely delivering facts.",
+   example:"The driver is unsure whether to brake hard, swerve, or continue forward.",
+   question:"What makes this situation stressful or confusing?"},
+  {key:"decision", title:"Discover the Decision", phase:"Discover",
+   why:"Practical confidence grows when people know how to make a sound decision under pressure.",
+   example:"Should the driver slow down and stop, change lanes, or drive over the debris?",
+   question:"What important decision must the learner make?"},
+  {key:"experience", title:"Capture Experience", phase:"Capture",
+   why:"This is where expert judgment becomes teachable. Capture what an experienced person notices, does, and considers.",
+   example:"The experienced driver checks mirrors, slows smoothly, signals, and changes lanes only when the path is clear.",
+   question:"What would an experienced person do, and why?"},
+  {key:"consequences", title:"Capture Consequences", phase:"Capture",
+   why:"Consequences explain why the decision matters and help generate warnings, common mistakes, and practical tips.",
+   example:"Swerving suddenly could cause a collision; driving over the debris could damage the car.",
+   question:"What could happen if the learner makes the wrong choice?"},
+  {key:"capability", title:"Define Capability", phase:"Build",
+   why:"A clear capability statement defines what success looks like for the learner.",
+   example:"The learner can respond calmly and safely when an object blocks the road.",
+   question:"After completing this Adventure, what should the learner confidently be able to do?"},
+  {key:"story", title:"Build the Story", phase:"Build",
+   why:"A story gives the learning context and makes the experience easier to remember.",
+   example:"Maya is driving home after work when she sees a fallen box in her lane.",
+   question:"Who is involved, where are they, and what is happening?"},
+  {key:"episodes", title:"Create Episodes", phase:"Build",
+   why:"Episodes break the Adventure into teachable moments. Each episode should focus on one primary idea or skill.",
+   example:"1. Notice the hazard\\n2. Slow down safely\\n3. Check surrounding traffic\\n4. Choose a safe response",
+   question:"What are the key moments or episodes in this Adventure?"},
+  {key:"review", title:"Review the Adventure", phase:"Finish",
+   why:"Review is where the author identifies gaps, weak explanations, missing warnings, or unclear decisions.",
+   example:"Add a warning against sudden swerving and clarify when stopping is safest.",
+   question:"What should be revised, clarified, or added?"},
+  {key:"publish", title:"Prepare to Publish", phase:"Finish",
+   why:"Publishing turns the Adventure into a useful output without changing the underlying source.",
+   example:"Create a Driver Confidence Guide mission and a four-panel comic storyboard.",
+   question:"Which output should this Adventure eventually produce?"}
+];
+
+let state = JSON.parse(localStorage.getItem("als_v21_state") || "null") || {
+  adventures: [{
+    id: crypto.randomUUID(),
+    title: "Garbage in the Road",
+    currentStep: 0,
+    data: {}
+  }],
+  activeId: null
+};
+if(!state.activeId) state.activeId = state.adventures[0].id;
+
+const $ = id => document.getElementById(id);
+const answer = $("answer");
+const reflection = $("reflection");
+const mainControls = $("mainControls");
+
+function activeAdventure(){
+  return state.adventures.find(a => a.id === state.activeId);
+}
+function saveState(showToast=false){
+  localStorage.setItem("als_v21_state", JSON.stringify(state));
+  $("saveStatus").textContent = "Saved locally";
+  if(showToast) toast("Saved");
+}
+function toast(msg){
+  $("toast").textContent=msg;
+  $("toast").classList.add("show");
+  setTimeout(()=>$("toast").classList.remove("show"),1400);
+}
+function renderList(){
+  const list=$("adventureList");
+  list.innerHTML="";
+  state.adventures.forEach(a=>{
+    const el=document.createElement("div");
+    el.className="adventure-item"+(a.id===state.activeId?" active":"");
+    el.innerHTML=`<strong>${escapeHtml(a.title || "Untitled Adventure")}</strong><small>Step ${a.currentStep+1} of ${steps.length}</small>`;
+    el.onclick=()=>{state.activeId=a.id;saveState();render();};
+    list.appendChild(el);
+  });
+}
+function render(){
+  const adv=activeAdventure();
+  const step=steps[adv.currentStep];
+  $("adventureTitle").textContent=adv.title || "Untitled Adventure";
+  $("stepLabel").textContent=`Step ${adv.currentStep+1} of ${steps.length} · ${step.phase}`;
+  $("stepTitle").textContent=step.title;
+  $("stepWhy").textContent=step.why;
+  $("stepExample").textContent=step.example;
+  $("stepQuestion").textContent=step.question;
+  answer.value=adv.data[step.key] || "";
+  $("backBtn").disabled=adv.currentStep===0;
+  reflection.classList.remove("show");
+  mainControls.style.display="flex";
+  document.querySelectorAll(".phase").forEach(p=>p.classList.toggle("active",p.dataset.phase===step.phase));
+  renderSummary();
+  renderList();
+}
+function renderSummary(){
+  const adv=activeAdventure();
+  const box=$("summaryContent");
+  box.innerHTML="";
+  steps.forEach(s=>{
+    const wrap=document.createElement("div");
+    wrap.className="summary-section";
+    const value=(adv.data[s.key]||"").trim();
+    wrap.innerHTML=`<strong>${escapeHtml(s.title)}</strong><p class="${value?"":"empty"}">${escapeHtml(value || "Not completed yet")}</p>`;
+    box.appendChild(wrap);
+  });
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+function continueStep(){
+  const adv=activeAdventure(), step=steps[adv.currentStep];
+  const value=answer.value.trim();
+  if(!value){toast("Please enter an answer first");return;}
+  adv.data[step.key]=value;
+  if(step.key==="situation" && (!adv.title || adv.title==="Untitled Adventure")){
+    adv.title=value.split(/[.!?]/)[0].slice(0,55) || "Untitled Adventure";
+  }
+  $("reflectionText").textContent=value;
+  reflection.classList.add("show");
+  mainControls.style.display="none";
+  saveState();
+  renderSummary();
+  renderList();
+}
+$("confirmReflectionBtn").onclick=()=>{
+  const adv=activeAdventure();
+  reflection.classList.remove("show");
+  mainControls.style.display="flex";
+  if(adv.currentStep < steps.length-1) adv.currentStep++;
+  else toast("Adventure complete");
+  saveState();
+  render();
+};
+$("editReflectionBtn").onclick=()=>{
+  reflection.classList.remove("show");
+  mainControls.style.display="flex";
+  answer.focus();
+};
+$("continueBtn").onclick=continueStep;
+$("saveBtn").onclick=()=>{
+  const adv=activeAdventure(), step=steps[adv.currentStep];
+  adv.data[step.key]=answer.value;
+  saveState(true);renderSummary();renderList();
+};
+$("backBtn").onclick=()=>{
+  const adv=activeAdventure();
+  adv.data[steps[adv.currentStep].key]=answer.value;
+  if(adv.currentStep>0) adv.currentStep--;
+  saveState();render();
+};
+$("newAdventureBtn").onclick=()=>{
+  const adv={id:crypto.randomUUID(),title:"Untitled Adventure",currentStep:0,data:{}};
+  state.adventures.push(adv);state.activeId=adv.id;saveState();render();
+};
+function download(name,content,type){
+  const blob=new Blob([content],{type});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  URL.revokeObjectURL(a.href);
+}
+$("exportJsonBtn").onclick=()=>download("adventure-learning-project.json",JSON.stringify(state,null,2),"application/json");
+$("exportMdBtn").onclick=()=>{
+  const adv=activeAdventure();
+  let md=`# ${adv.title || "Untitled Adventure"}\n\n`;
+  steps.forEach(s=>{md+=`## ${s.title}\n\n${adv.data[s.key] || "_Not completed_"}\n\n`;});
+  download((adv.title||"adventure").replace(/[^a-z0-9]+/gi,"-").toLowerCase()+".md",md,"text/markdown");
+};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const imported=JSON.parse(reader.result);
+      if(!imported.adventures || !Array.isArray(imported.adventures)) throw new Error();
+      state=imported;
+      if(!state.activeId && state.adventures[0]) state.activeId=state.adventures[0].id;
+      saveState();render();toast("Project imported");
+    }catch{toast("That file is not a valid project export");}
+  };
+  reader.readAsText(file);
+};
+answer.addEventListener("input",()=>{$("saveStatus").textContent="Unsaved changes";});
+render();
+</script>
+</body>
+</html>

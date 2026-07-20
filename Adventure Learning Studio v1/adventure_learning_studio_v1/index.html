@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adventure Learning Studio — Version 1</title>
+  <style>
+    :root {
+      --bg: #f5f2ea;
+      --panel: #fffdf8;
+      --ink: #25231f;
+      --muted: #6f6a60;
+      --line: #d8d1c5;
+      --accent: #355f55;
+      --accent-soft: #dfeae6;
+      --danger: #9b3f33;
+      --shadow: 0 12px 28px rgba(37, 35, 31, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    button, input, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 300px 1fr;
+    }
+
+    .sidebar {
+      background: #213d37;
+      color: white;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      margin: 0;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+      opacity: 0.78;
+      font-size: 0.9rem;
+    }
+
+    .project-name {
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .project-name label {
+      display: block;
+      font-size: 0.78rem;
+      opacity: 0.72;
+      margin-bottom: 5px;
+    }
+
+    .project-name input {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: white;
+      font-weight: 650;
+      outline: none;
+    }
+
+    .sidebar h2 {
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.72;
+      margin: 0;
+    }
+
+    .situation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: auto;
+    }
+
+    .situation-item {
+      width: 100%;
+      text-align: left;
+      padding: 11px 12px;
+      border: 0;
+      border-radius: 10px;
+      color: white;
+      background: transparent;
+    }
+
+    .situation-item:hover,
+    .situation-item.active {
+      background: rgba(255,255,255,0.13);
+    }
+
+    .situation-item small {
+      display: block;
+      opacity: 0.67;
+      margin-top: 3px;
+    }
+
+    .sidebar-actions {
+      margin-top: auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-weight: 650;
+    }
+
+    .btn-primary {
+      background: white;
+      color: #213d37;
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.11);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+
+    .main {
+      padding: 30px;
+      overflow: auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 1.75rem;
+    }
+
+    .topbar p {
+      margin: 5px 0 0;
+      color: var(--muted);
+    }
+
+    .progress-card {
+      min-width: 230px;
+      background: var(--panel);
+      padding: 14px 16px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+    }
+
+    .progress-head {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .progress-track {
+      height: 10px;
+      background: #ebe6dc;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+
+    .coach {
+      background: var(--accent-soft);
+      border: 1px solid #bfcfc9;
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-bottom: 22px;
+    }
+
+    .coach strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .card.full {
+      grid-column: 1 / -1;
+    }
+
+    .card h3 {
+      margin: 0 0 5px;
+      font-size: 1.05rem;
+    }
+
+    .card .prompt {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-bottom: 12px;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 12px;
+      background: white;
+      color: var(--ink);
+      outline: none;
+    }
+
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(53,95,85,0.12);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .episode-list {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .episode {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: white;
+    }
+
+    .episode-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .episode-head strong {
+      font-size: 0.92rem;
+    }
+
+    .episode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      border: 0;
+      background: transparent;
+      color: var(--danger);
+      font-size: 0.88rem;
+      font-weight: 650;
+    }
+
+    .add-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .add-row input {
+      flex: 1;
+    }
+
+    .add-row button,
+    .export-btn {
+      border: 0;
+      background: var(--accent);
+      color: white;
+      border-radius: 10px;
+      padding: 10px 13px;
+      font-weight: 700;
+    }
+
+    .footer-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .footer-actions .left,
+    .footer-actions .right {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ghost {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 10px 13px;
+      font-weight: 650;
+    }
+
+    .danger {
+      border-color: #d9b9b4;
+      color: var(--danger);
+    }
+
+    .empty {
+      background: var(--panel);
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      padding: 50px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty h2 {
+      color: var(--ink);
+      margin-top: 0;
+    }
+
+    .status-list {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .status {
+      border-radius: 8px;
+      padding: 7px 9px;
+      text-align: center;
+      font-size: 0.78rem;
+      background: #eee9df;
+      color: var(--muted);
+    }
+
+    .status.done {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+      .workspace { grid-template-columns: 1fr; }
+      .card.full { grid-column: auto; }
+      .topbar { flex-direction: column; }
+      .progress-card { width: 100%; }
+      .episode-grid { grid-template-columns: 1fr; }
+      .status-list { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Adventure Learning Studio</h1>
+        <p>Version 1 — Situation Builder</p>
+      </div>
+
+      <div class="project-name">
+        <label for="projectName">Project</label>
+        <input id="projectName" value="Driver Confidence Guide" />
+      </div>
+
+      <div>
+        <h2>Situations</h2>
+        <div id="situationList" class="situation-list"></div>
+      </div>
+
+      <div class="sidebar-actions">
+        <button class="btn btn-primary" id="newSituationBtn">+ New Situation</button>
+        <button class="btn btn-secondary" id="exportProjectBtn">Export Project</button>
+        <label class="btn btn-secondary" style="text-align:center; cursor:pointer;">
+          Import Project
+          <input id="importProjectInput" type="file" accept=".json" hidden />
+        </label>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="emptyState" class="empty" hidden>
+        <h2>Start with a real situation</h2>
+        <p>What happened that made someone uncertain, anxious, or stuck?</p>
+        <button class="export-btn" id="emptyNewBtn">Create the first situation</button>
+      </div>
+
+      <section id="editor" hidden>
+        <div class="topbar">
+          <div>
+            <h2 id="editorTitle">Untitled Situation</h2>
+            <p>Build from uncertainty toward capability.</p>
+          </div>
+
+          <div class="progress-card">
+            <div class="progress-head">
+              <span>Mission readiness</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="statusList" class="status-list"></div>
+          </div>
+        </div>
+
+        <div class="coach">
+          <strong>Studio Coach</strong>
+          <span id="coachText">Describe what happened.</span>
+        </div>
+
+        <div class="workspace">
+          <section class="card">
+            <h3>Situation</h3>
+            <div class="prompt">What happened?</div>
+            <input id="titleInput" type="text" placeholder="Short title" />
+            <textarea id="situationInput" placeholder="Describe the real situation..."></textarea>
+          </section>
+
+          <section class="card">
+            <h3>Anxiety</h3>
+            <div class="prompt">Why is this stressful or uncertain?</div>
+            <textarea id="anxietyInput" placeholder="I don't know what to do..."></textarea>
+          </section>
+
+          <section class="card">
+            <h3>Capability</h3>
+            <div class="prompt">What will the learner be able to do afterward?</div>
+            <textarea id="capabilityInput" placeholder="The learner will be able to..."></textarea>
+          </section>
+
+          <section class="card">
+            <h3>Story</h3>
+            <div class="prompt">Who is involved, where are they, and why does it matter now?</div>
+            <textarea id="storyInput" placeholder="Maya is borrowing her parents' car for work..."></textarea>
+          </section>
+
+          <section class="card full">
+            <h3>Episodes and Skills</h3>
+            <div class="prompt">What happens first? What happens next? Name the skill each episode teaches.</div>
+            <div id="episodeList" class="episode-list"></div>
+            <div class="add-row">
+              <input id="newEpisodeInput" type="text" placeholder="Add the next episode..." />
+              <button id="addEpisodeBtn">Add Episode</button>
+            </div>
+          </section>
+
+          <section class="card">
+            <h3>Tony's Tip</h3>
+            <div class="prompt">What practical wisdom would an experienced person share?</div>
+            <textarea id="tipInput" placeholder="Take a picture of the VIN instead of copying it by hand..."></textarea>
+          </section>
+
+          <section class="card">
+            <h3>Warning</h3>
+            <div class="prompt">Is there anything dangerous, damaging, or easy to misunderstand?</div>
+            <textarea id="warningInput" placeholder="Never adjust the seat while driving..."></textarea>
+          </section>
+
+          <section class="card">
+            <h3>Common Mistake</h3>
+            <div class="prompt">What do beginners often get wrong?</div>
+            <textarea id="mistakeInput" placeholder="Pulling into the fuel station on the wrong side..."></textarea>
+          </section>
+
+          <section class="card">
+            <h3>Why You Can Relax</h3>
+            <div class="prompt">What reassurance helps reduce anxiety?</div>
+            <textarea id="relaxInput" placeholder="You are not repairing the car. You are learning one simple step..."></textarea>
+          </section>
+        </div>
+
+        <div class="footer-actions">
+          <div class="left">
+            <button class="ghost" id="duplicateBtn">Duplicate Situation</button>
+            <button class="ghost danger" id="deleteBtn">Delete Situation</button>
+          </div>
+          <div class="right">
+            <button class="ghost" id="exportSituationBtn">Export Situation</button>
+            <button class="export-btn" id="generateMissionBtn">Generate Mission Draft</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "adventureLearningStudioV1";
+
+    const blankSituation = () => ({
+      id: crypto.randomUUID(),
+      title: "",
+      situation: "",
+      anxiety: "",
+      capability: "",
+      story: "",
+      episodes: [],
+      tip: "",
+      warning: "",
+      mistake: "",
+      relax: ""
+    });
+
+    let state = loadState() || {
+      projectName: "Driver Confidence Guide",
+      selectedId: null,
+      situations: []
+    };
+
+    const els = {
+      projectName: document.getElementById("projectName"),
+      situationList: document.getElementById("situationList"),
+      newSituationBtn: document.getElementById("newSituationBtn"),
+      emptyNewBtn: document.getElementById("emptyNewBtn"),
+      exportProjectBtn: document.getElementById("exportProjectBtn"),
+      importProjectInput: document.getElementById("importProjectInput"),
+      emptyState: document.getElementById("emptyState"),
+      editor: document.getElementById("editor"),
+      editorTitle: document.getElementById("editorTitle"),
+      titleInput: document.getElementById("titleInput"),
+      situationInput: document.getElementById("situationInput"),
+      anxietyInput: document.getElementById("anxietyInput"),
+      capabilityInput: document.getElementById("capabilityInput"),
+      storyInput: document.getElementById("storyInput"),
+      episodeList: document.getElementById("episodeList"),
+      newEpisodeInput: document.getElementById("newEpisodeInput"),
+      addEpisodeBtn: document.getElementById("addEpisodeBtn"),
+      tipInput: document.getElementById("tipInput"),
+      warningInput: document.getElementById("warningInput"),
+      mistakeInput: document.getElementById("mistakeInput"),
+      relaxInput: document.getElementById("relaxInput"),
+      progressPercent: document.getElementById("progressPercent"),
+      progressFill: document.getElementById("progressFill"),
+      coachText: document.getElementById("coachText"),
+      statusList: document.getElementById("statusList"),
+      duplicateBtn: document.getElementById("duplicateBtn"),
+      deleteBtn: document.getElementById("deleteBtn"),
+      exportSituationBtn: document.getElementById("exportSituationBtn"),
+      generateMissionBtn: document.getElementById("generateMissionBtn")
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function selected() {
+      return state.situations.find(s => s.id === state.selectedId) || null;
+    }
+
+    function createSituation() {
+      const item = blankSituation();
+      state.situations.push(item);
+      state.selectedId = item.id;
+      saveState();
+      render();
+      setTimeout(() => els.titleInput.focus(), 0);
+    }
+
+    function render() {
+      els.projectName.value = state.projectName;
+      renderSidebar();
+
+      const item = selected();
+      const hasItem = Boolean(item);
+
+      els.emptyState.hidden = hasItem;
+      els.editor.hidden = !hasItem;
+
+      if (!item) return;
+
+      els.editorTitle.textContent = item.title.trim() || "Untitled Situation";
+      els.titleInput.value = item.title;
+      els.situationInput.value = item.situation;
+      els.anxietyInput.value = item.anxiety;
+      els.capabilityInput.value = item.capability;
+      els.storyInput.value = item.story;
+      els.tipInput.value = item.tip;
+      els.warningInput.value = item.warning;
+      els.mistakeInput.value = item.mistake;
+      els.relaxInput.value = item.relax;
+
+      renderEpisodes(item);
+      renderProgress(item);
+    }
+
+    function renderSidebar() {
+      els.situationList.innerHTML = "";
+
+      state.situations.forEach(item => {
+        const btn = document.createElement("button");
+        btn.className = "situation-item" + (item.id === state.selectedId ? " active" : "");
+        btn.innerHTML = `
+          <span>${escapeHtml(item.title.trim() || "Untitled Situation")}</span>
+          <small>${escapeHtml(item.capability.trim() || "Capability not defined")}</small>
+        `;
+        btn.addEventListener("click", () => {
+          state.selectedId = item.id;
+          saveState();
+          render();
+        });
+        els.situationList.appendChild(btn);
+      });
+    }
+
+    function renderEpisodes(item) {
+      els.episodeList.innerHTML = "";
+
+      item.episodes.forEach((ep, index) => {
+        const wrap = document.createElement("div");
+        wrap.className = "episode";
+        wrap.innerHTML = `
+          <div class="episode-head">
+            <strong>Episode ${index + 1}</strong>
+            <button class="icon-btn" data-remove="${index}">Remove</button>
+          </div>
+          <div class="episode-grid">
+            <input type="text" data-episode="${index}" value="${escapeAttr(ep.text)}" placeholder="What happens?" />
+            <input type="text" data-skill="${index}" value="${escapeAttr(ep.skill)}" placeholder="What skill does this teach?" />
+          </div>
+        `;
+        els.episodeList.appendChild(wrap);
+      });
+
+      els.episodeList.querySelectorAll("[data-remove]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          item.episodes.splice(Number(btn.dataset.remove), 1);
+          saveState();
+          render();
+        });
+      });
+
+      els.episodeList.querySelectorAll("[data-episode]").forEach(input => {
+        input.addEventListener("input", () => {
+          item.episodes[Number(input.dataset.episode)].text = input.value;
+          saveState();
+          renderProgress(item);
+          renderSidebar();
+        });
+      });
+
+      els.episodeList.querySelectorAll("[data-skill]").forEach(input => {
+        input.addEventListener("input", () => {
+          item.episodes[Number(input.dataset.skill)].skill = input.value;
+          saveState();
+          renderProgress(item);
+          renderSidebar();
+        });
+      });
+    }
+
+    function completeness(item) {
+      const checks = [
+        ["Situation", Boolean(item.situation.trim())],
+        ["Anxiety", Boolean(item.anxiety.trim())],
+        ["Capability", Boolean(item.capability.trim())],
+        ["Story", Boolean(item.story.trim())],
+        ["Episodes", item.episodes.some(e => e.text.trim())],
+        ["Skills", item.episodes.some(e => e.skill.trim())],
+        ["Experience", Boolean(item.tip.trim() || item.warning.trim() || item.mistake.trim() || item.relax.trim())],
+        ["Title", Boolean(item.title.trim())]
+      ];
+      const done = checks.filter(([, yes]) => yes).length;
+      return { checks, percent: Math.round((done / checks.length) * 100) };
+    }
+
+    function renderProgress(item) {
+      const info = completeness(item);
+      els.progressPercent.textContent = info.percent + "%";
+      els.progressFill.style.width = info.percent + "%";
+      els.statusList.innerHTML = info.checks.map(([label, yes]) =>
+        `<div class="status ${yes ? "done" : ""}">${yes ? "✓ " : ""}${label}</div>`
+      ).join("");
+
+      const firstMissing = info.checks.find(([, yes]) => !yes);
+      const coach = {
+        "Situation": "Describe what happened in a real situation.",
+        "Anxiety": "Explain why this situation feels stressful or uncertain.",
+        "Capability": "Define what the learner will be able to do afterward.",
+        "Story": "Give the situation a person, place, and reason to matter.",
+        "Episodes": "Add the first meaningful step in resolving the situation.",
+        "Skills": "Name the ability taught by each episode.",
+        "Experience": "Add practical wisdom: a Tony's Tip, warning, common mistake, or reassurance.",
+        "Title": "Give this situation a short, clear title."
+      };
+      els.coachText.textContent = firstMissing ? coach[firstMissing[0]] : "This situation is mission-ready. Generate a draft and review it.";
+    }
+
+    function updateField(field, value) {
+      const item = selected();
+      if (!item) return;
+      item[field] = value;
+      saveState();
+      els.editorTitle.textContent = item.title.trim() || "Untitled Situation";
+      renderProgress(item);
+      renderSidebar();
+    }
+
+    function addEpisode() {
+      const item = selected();
+      const text = els.newEpisodeInput.value.trim();
+      if (!item || !text) return;
+      item.episodes.push({ text, skill: "" });
+      els.newEpisodeInput.value = "";
+      saveState();
+      render();
+    }
+
+    function download(filename, content, type = "application/json") {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function slugify(text) {
+      return (text || "adventure-learning")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+    }
+
+    function missionMarkdown(item) {
+      const episodes = item.episodes
+        .filter(ep => ep.text.trim())
+        .map((ep, i) => `${i + 1}. **${ep.text.trim()}**${ep.skill.trim() ? `\n   - Skill: ${ep.skill.trim()}` : ""}`)
+        .join("\n");
+
+      const experience = [
+        item.tip.trim() ? `## Tony's Tip\n\n${item.tip.trim()}` : "",
+        item.warning.trim() ? `## Warning\n\n${item.warning.trim()}` : "",
+        item.mistake.trim() ? `## Common Mistake\n\n${item.mistake.trim()}` : "",
+        item.relax.trim() ? `## Why You Can Relax\n\n${item.relax.trim()}` : ""
+      ].filter(Boolean).join("\n\n");
+
+      return `# ${item.title.trim() || "Untitled Mission"}
+
+## Situation
+
+${item.situation.trim() || "_Not yet written._"}
+
+## Anxiety to Reduce
+
+${item.anxiety.trim() || "_Not yet written._"}
+
+## Capability
+
+${item.capability.trim() || "_Not yet written._"}
+
+## Story
+
+${item.story.trim() || "_Not yet written._"}
+
+## Episodes
+
+${episodes || "_No episodes yet._"}
+
+${experience}
+
+---
+
+**Adventure Learning Test**
+
+- Begins with a real situation
+- Reduces a real anxiety
+- Teaches through experience
+- Builds a useful skill
+- Reduces friction
+- Leaves the learner more capable
+`;
+    }
+
+    els.newSituationBtn.addEventListener("click", createSituation);
+    els.emptyNewBtn.addEventListener("click", createSituation);
+
+    els.projectName.addEventListener("input", e => {
+      state.projectName = e.target.value;
+      saveState();
+    });
+
+    [
+      ["titleInput", "title"],
+      ["situationInput", "situation"],
+      ["anxietyInput", "anxiety"],
+      ["capabilityInput", "capability"],
+      ["storyInput", "story"],
+      ["tipInput", "tip"],
+      ["warningInput", "warning"],
+      ["mistakeInput", "mistake"],
+      ["relaxInput", "relax"]
+    ].forEach(([id, field]) => {
+      els[id].addEventListener("input", e => updateField(field, e.target.value));
+    });
+
+    els.addEpisodeBtn.addEventListener("click", addEpisode);
+    els.newEpisodeInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") addEpisode();
+    });
+
+    els.duplicateBtn.addEventListener("click", () => {
+      const item = selected();
+      if (!item) return;
+      const copy = structuredClone(item);
+      copy.id = crypto.randomUUID();
+      copy.title = (copy.title || "Untitled Situation") + " — Copy";
+      state.situations.push(copy);
+      state.selectedId = copy.id;
+      saveState();
+      render();
+    });
+
+    els.deleteBtn.addEventListener("click", () => {
+      const item = selected();
+      if (!item) return;
+      if (!confirm(`Delete "${item.title || "Untitled Situation"}"?`)) return;
+      state.situations = state.situations.filter(s => s.id !== item.id);
+      state.selectedId = state.situations[0]?.id || null;
+      saveState();
+      render();
+    });
+
+    els.exportProjectBtn.addEventListener("click", () => {
+      download(`${slugify(state.projectName)}-project.json`, JSON.stringify(state, null, 2));
+    });
+
+    els.exportSituationBtn.addEventListener("click", () => {
+      const item = selected();
+      if (!item) return;
+      download(`${slugify(item.title)}.json`, JSON.stringify(item, null, 2));
+    });
+
+    els.generateMissionBtn.addEventListener("click", () => {
+      const item = selected();
+      if (!item) return;
+      download(`${slugify(item.title)}-mission.md`, missionMarkdown(item), "text/markdown");
+    });
+
+    els.importProjectInput.addEventListener("change", async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const imported = JSON.parse(await file.text());
+        if (!Array.isArray(imported.situations)) throw new Error("Invalid project file.");
+        state = imported;
+        state.selectedId = state.selectedId || state.situations[0]?.id || null;
+        saveState();
+        render();
+      } catch (err) {
+        alert("That file could not be imported.");
+      }
+      e.target.value = "";
+    });
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeAttr(text) {
+      return escapeHtml(text);
+    }
+
+    if (!state.selectedId && state.situations.length) {
+      state.selectedId = state.situations[0].id;
+    }
+
+    render();
+  </script>
+</body>
+</html>
