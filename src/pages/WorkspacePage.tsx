@@ -1,91 +1,137 @@
-import type { Adventure } from "../models/adventure";
-import { ProgressPanel } from "../components/ProgressPanel";
-import { ActionCard } from "../components/ActionCard";
+import { FormEvent, useState } from "react";
 
-interface WorkspacePageProps {
-  adventure: Adventure;
-  onBack: () => void;
-  onDelete: (id: string) => void;
-}
+import Button from "../components/Button";
+import Card from "../components/Card";
+import Modal from "../components/Modal";
 
-export function WorkspacePage({ adventure, onBack, onDelete }: WorkspacePageProps) {
-  const publishLocked = adventure.status === "draft";
+export default function WorkspacePage() {
+  const [showNewAdventure, setShowNewAdventure] = useState(false);
+  const [adventureName, setAdventureName] = useState("");
+  const [currentAdventure, setCurrentAdventure] = useState(
+    "Driver Confidence Guide",
+  );
+
+  function closeNewAdventureModal() {
+    setShowNewAdventure(false);
+    setAdventureName("");
+  }
+
+  function createAdventure(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const trimmedName = adventureName.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    setCurrentAdventure(trimmedName);
+    closeNewAdventureModal();
+  }
 
   return (
-    <main className="page-shell">
-      <section className="workspace-header">
-        <div>
-          <button className="link-button" onClick={onBack}>← Adventure Library</button>
-          <p className="eyebrow">Adventure Workspace</p>
-          <h1>{adventure.title}</h1>
-          <p>{adventure.summary}</p>
-        </div>
-        <div className="workspace-meta">
-          <span className={`status-badge ${adventure.status}`}>{adventure.status}</span>
-          <span>Version {adventure.version}</span>
-        </div>
-      </section>
+    <>
+      <main
+        style={{
+          maxWidth: "800px",
+          margin: "40px auto",
+          padding: "0 20px",
+          fontFamily: "Segoe UI, Arial, sans-serif",
+        }}
+      >
+        <header style={{ marginBottom: "32px" }}>
+          <h1 style={{ marginBottom: "4px" }}>
+            Adventure Learning Studio
+          </h1>
 
-      <section className="workspace-grid">
-        <ProgressPanel adventure={adventure} />
+          <p style={{ color: "#666", margin: 0 }}>
+            Version 0.1.2
+          </p>
+        </header>
 
-        <section className="panel workspace-actions">
-          <h2>What would you like to do?</h2>
-          <ActionCard
-            title="Continue Authoring"
-            description="Resume the Conversation Engine at the next unfinished section."
-            buttonLabel="Resume"
-            disabled
-          />
-          <ActionCard
-            title="Adventure Editor"
-            description="Edit completed sections directly."
-            buttonLabel="Open Editor"
-            disabled
-          />
-          <ActionCard
-            title="Preview"
-            description="Read the Adventure as a learner will experience it."
-            buttonLabel="Preview"
-            disabled
-          />
-          <ActionCard
-            title="Publishing Center"
-            description="Generate Missions, Storyboards, Websites, and PDFs."
-            buttonLabel={publishLocked ? "Locked until complete" : "Open Publishing"}
-            disabled
-          />
-          <ActionCard
-            title="Learning Insights"
-            description="Review gaps, duplicated concepts, and recommended follow-up Adventures."
-            buttonLabel="Coming Soon"
-            disabled
-          />
-          <ActionCard
-            title="Delete Adventure"
-            description="Permanently remove this Adventure from this browser."
-            buttonLabel="Delete"
-            danger
-            onClick={() => onDelete(adventure.id)}
-          />
-        </section>
+        <h2 style={{ marginBottom: "24px" }}>
+          Workspace
+        </h2>
 
-        <aside className="panel activity-panel">
-          <h2>Recent Activity</h2>
-          <ul>
-            {adventure.activity.map((item) => <li key={item}>{item}</li>)}
+        <Card title="Current Adventure">
+          <p
+            style={{
+              fontSize: "1.1rem",
+              marginBottom: "16px",
+            }}
+          >
+            <strong>{currentAdventure}</strong>
+          </p>
+
+          <Button>
+            Continue Editing
+          </Button>
+        </Card>
+
+        <Card title="Recent Adventures">
+          <ul style={{ lineHeight: "2" }}>
+            <li>{currentAdventure}</li>
+            <li>AI for Seniors</li>
+            <li>Gardening Basics</li>
           </ul>
-          <hr />
-          <h2>Coming Later</h2>
-          <ul>
-            <li>Version History</li>
-            <li>Notes</li>
-            <li>Bookmarks</li>
-            <li>AI Mentor</li>
-            <li>Collaboration</li>
-          </ul>
-        </aside>
-      </section>
-    </main>
+
+          <Button onClick={() => setShowNewAdventure(true)}>
+            New Adventure
+          </Button>
+        </Card>
+      </main>
+
+      <Modal
+        title="New Adventure"
+        open={showNewAdventure}
+        onClose={closeNewAdventureModal}
+      >
+        <form onSubmit={createAdventure}>
+          <label
+            htmlFor="adventure-name"
+            style={{
+              display: "block",
+              marginBottom: "8px",
+              fontWeight: 600,
+            }}
+          >
+            Adventure Name
+          </label>
+
+          <input
+            id="adventure-name"
+            type="text"
+            value={adventureName}
+            onChange={(event) => setAdventureName(event.target.value)}
+            autoFocus
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "10px",
+              fontSize: "1rem",
+              border: "1px solid #999",
+              borderRadius: "4px",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "10px",
+              marginTop: "24px",
+            }}
+          >
+            <Button onClick={closeNewAdventureModal}>
+              Cancel
+            </Button>
+
+            <Button type="submit">
+              Create
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }
