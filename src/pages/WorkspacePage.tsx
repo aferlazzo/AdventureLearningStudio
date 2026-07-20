@@ -4,12 +4,26 @@ import Button from "../components/Button";
 import Card from "../components/Card";
 import Modal from "../components/Modal";
 
-export default function WorkspacePage() {
+interface WorkspacePageProps {
+  currentAdventure: string;
+  onCurrentAdventureChange: (name: string) => void;
+  onContinueEditing: () => void;
+}
+
+export default function WorkspacePage({
+  currentAdventure,
+  onCurrentAdventureChange,
+  onContinueEditing,
+}: WorkspacePageProps) {
   const [showNewAdventure, setShowNewAdventure] = useState(false);
   const [adventureName, setAdventureName] = useState("");
-  const [currentAdventure, setCurrentAdventure] = useState(
-    "Driver Confidence Guide",
-  );
+
+  const hasCurrentAdventure = currentAdventure.trim().length > 0;
+
+  function openNewAdventureModal() {
+    setAdventureName("");
+    setShowNewAdventure(true);
+  }
 
   function closeNewAdventureModal() {
     setShowNewAdventure(false);
@@ -25,8 +39,11 @@ export default function WorkspacePage() {
       return;
     }
 
-    setCurrentAdventure(trimmedName);
+    onCurrentAdventureChange(trimmedName);
     closeNewAdventureModal();
+
+    // Move directly into the authoring screen.
+    onContinueEditing();
   }
 
   return (
@@ -45,7 +62,7 @@ export default function WorkspacePage() {
           </h1>
 
           <p style={{ color: "#666", margin: 0 }}>
-            Version 0.1.2
+            Version 0.1.3
           </p>
         </header>
 
@@ -53,29 +70,50 @@ export default function WorkspacePage() {
           Workspace
         </h2>
 
-        <Card title="Current Adventure">
-          <p
-            style={{
-              fontSize: "1.1rem",
-              marginBottom: "16px",
-            }}
-          >
-            <strong>{currentAdventure}</strong>
-          </p>
+        {hasCurrentAdventure ? (
+          <Card title="Current Adventure">
+            <p
+              style={{
+                fontSize: "1.1rem",
+                marginBottom: "16px",
+              }}
+            >
+              <strong>{currentAdventure}</strong>
+            </p>
 
-          <Button>
-            Continue Editing
-          </Button>
-        </Card>
+            <Button onClick={onContinueEditing}>
+              Continue Editing
+            </Button>
+          </Card>
+        ) : (
+          <Card title="Current Adventure">
+            <p style={{ color: "#666", marginBottom: "16px" }}>
+              No adventure has been created yet.
+            </p>
 
-        <Card title="Recent Adventures">
-          <ul style={{ lineHeight: "2" }}>
-            <li>{currentAdventure}</li>
-            <li>AI for Seniors</li>
-            <li>Gardening Basics</li>
-          </ul>
+            <Button onClick={openNewAdventureModal}>
+              Create Your First Adventure
+            </Button>
+          </Card>
+        )}
 
-          <Button onClick={() => setShowNewAdventure(true)}>
+        <Card title="Adventures">
+          {hasCurrentAdventure ? (
+            <ul
+              style={{
+                lineHeight: "2",
+                marginBottom: "20px",
+              }}
+            >
+              <li>{currentAdventure}</li>
+            </ul>
+          ) : (
+            <p style={{ color: "#666", marginBottom: "20px" }}>
+              Your adventures will appear here.
+            </p>
+          )}
+
+          <Button onClick={openNewAdventureModal}>
             New Adventure
           </Button>
         </Card>
@@ -102,7 +140,10 @@ export default function WorkspacePage() {
             id="adventure-name"
             type="text"
             value={adventureName}
-            onChange={(event) => setAdventureName(event.target.value)}
+            onChange={(event) =>
+              setAdventureName(event.target.value)
+            }
+            placeholder="Example: Driver Confidence Guide"
             autoFocus
             style={{
               width: "100%",
@@ -122,11 +163,17 @@ export default function WorkspacePage() {
               marginTop: "24px",
             }}
           >
-            <Button onClick={closeNewAdventureModal}>
+            <Button
+              type="button"
+              onClick={closeNewAdventureModal}
+            >
               Cancel
             </Button>
 
-            <Button type="submit">
+            <Button
+              type="submit"
+              disabled={!adventureName.trim()}
+            >
               Create
             </Button>
           </div>
