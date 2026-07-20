@@ -11,6 +11,7 @@ export type AdventureSectionKey =
 export interface AdventureSection {
   complete: boolean;
   content: string;
+  answers?: string[];
 }
 
 export interface Adventure {

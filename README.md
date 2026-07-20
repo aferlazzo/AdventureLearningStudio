@@ -1,92 +1,31 @@
-# Adventure Learning Studio
+# Sprint 3 — Workspace Authoring Mode
 
-Adventure Learning Studio is an authoring environment for creating and publishing reusable learning adventures.
+This update adds the first working end-to-end authoring loop.
 
-Its purpose is to help authors transform knowledge into engaging, visual learning experiences.
+## What changes
 
-The Studio is intentionally independent of any particular subject. It provides the tools for creating adventures; the adventures provide the content.
+- The center panel now recommends the next unfinished section.
+- **Continue** switches the Workspace into Authoring Mode.
+- The Experience section asks three guided questions.
+- Every answer saves automatically to browser storage.
+- Completing the questions marks Experience complete.
+- The Workspace returns to Dashboard Mode and advances to Consequences.
+- The same three-question mechanism works for all six core sections.
 
-**Driver Confidence Guide is simply the first adventure created with the Studio.**
+## Install
 
----
+1. Stop the Vite server with `Ctrl+C`.
+2. Extract this ZIP.
+3. Double-click `INSTALL_SPRINT3.cmd`.
+4. In Command Prompt:
 
-## Design Philosophy
-
-### The Studio knows *how*. The Adventure knows *what*.
-
-The Studio understands concepts such as:
-
-- Adventures
-- Missions
-- Storyboards
-- Comics
-- Artwork
-- Publishing
-
-The Adventure supplies the subject matter.
-
-### Authors think in adventures, not files.
-
-Authors should think:
-
-> "I'm working on the Driver Confidence Guide."
-
-—not—
-
-> "I'm editing Mission08.json."
-
-The Studio hides folders, filenames, and implementation details whenever possible.
-
-### Make the common workflow effortless.
-
-Choose Adventure → Continue Working → Create or Edit → Review → Publish
-
-### Hide complexity.
-
-Technology should support creativity, not interrupt it.
-
-### Generalize only when experience justifies it.
-
-As additional adventures are created, common capabilities move into the Studio. Subject-specific behavior remains inside each adventure.
-
-### Don't over-engineer.
-
-Every feature should answer one question:
-
-> Does this make creating learning adventures easier?
-
-If not, it probably doesn't belong.
-
----
-
-## Current Build
-
-This starter repository currently includes:
-
-- Adventure Library
-- Adventure Workspace
-- Local browser persistence
-- Canonical Adventure model
-- A seeded Driver Confidence Guide adventure
-
-The Conversation Engine, Adventure Editor, Preview, Publishing Center, and Learning Engine are represented in the Workspace but intentionally remain locked until their implementation sprints begin.
-
-## Requirements
-
-- Node.js 20+
-- npm
-
-## Run Locally
-
-```powershell
-npm install
+```cmd
+cd /d C:\Projects\AdventureLearningStudio
 npm run dev
 ```
 
-## Build
+The installer creates a backup in:
 
-```powershell
-npm run build
+```text
+C:\Projects\AdventureLearningStudio\backup-sprint2
 ```
-
-The deployable site is generated in the `dist` folder.
