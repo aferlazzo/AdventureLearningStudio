@@ -3,6 +3,7 @@ import type { Adventure, AdventureSectionKey } from "../models/adventure";
 import { ProgressPanel } from "../components/ProgressPanel";
 import { ContinuePanel } from "../components/ContinuePanel";
 import { AuthoringPanel } from "../components/AuthoringPanel";
+import { publishAdventureHtml } from "../services/htmlPublisher";
 
 interface WorkspacePageProps {
   adventure: Adventure;
@@ -62,6 +63,16 @@ export function WorkspacePage({
     setActiveSection(null);
   }
 
+  function publishHtml() {
+    publishAdventureHtml(adventure);
+
+    onUpdate({
+      ...adventure,
+      updated: new Date().toISOString(),
+      activity: ["HTML edition published", ...adventure.activity]
+    });
+  }
+
   return (
     <main className="page-shell">
       <section className="workspace-header">
@@ -107,8 +118,15 @@ export function WorkspacePage({
             <li className={activeSection ? "active-mode" : ""}>Authoring</li>
             <li>Editing — later</li>
             <li>Preview — later</li>
-            <li>Publishing — later</li>
+            <li>Publishing — available</li>
           </ul>
+          <hr />
+          <button className="primary-button" onClick={publishHtml}>
+            Publish HTML
+          </button>
+          <p className="autosave-note">
+            Downloads a self-contained web page that opens in any browser.
+          </p>
           <hr />
           <button className="danger-link" onClick={() => onDelete(adventure.id)}>
             Delete Adventure
