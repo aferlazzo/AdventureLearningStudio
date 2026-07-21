@@ -9,7 +9,9 @@ export default function App() {
   const [adventures, setAdventures] = useState<Adventure[]>(() => loadAdventures());
   const [activeAdventureId, setActiveAdventureId] = useState<string | null>(null);
 
-  const activeAdventure = adventures.find((adventure) => adventure.id === activeAdventureId);
+  const activeAdventure = adventures.find(
+    (adventure) => adventure.id === activeAdventureId
+  );
 
   function persist(next: Adventure[]) {
     setAdventures(next);
@@ -17,11 +19,14 @@ export default function App() {
   }
 
   function updateAdventure(updated: Adventure) {
-    persist(adventures.map((item) => item.id === updated.id ? updated : item));
+    persist(
+      adventures.map((item) => (item.id === updated.id ? updated : item))
+    );
   }
 
   function createAdventure() {
     const now = new Date().toISOString();
+
     const adventure: Adventure = {
       id: crypto.randomUUID(),
       title: "Untitled Adventure",
@@ -33,14 +38,13 @@ export default function App() {
       version: 1,
       tags: [],
       domain: "General",
-      sections: {
-        situation: { complete: false, content: "", answers: [] },
-        anxiety: { complete: false, content: "", answers: [] },
-        decision: { complete: false, content: "", answers: [] },
-        experience: { complete: false, content: "", answers: [] },
-        consequences: { complete: false, content: "", answers: [] },
-        capability: { complete: false, content: "", answers: [] }
-      },
+
+      purpose: "",
+      audience: "",
+      confidenceOutcome: "",
+
+      missions: [],
+
       notes: [],
       activity: ["Adventure created"]
     };
@@ -53,7 +57,10 @@ export default function App() {
     const adventure = adventures.find((item) => item.id === id);
     if (!adventure) return;
 
-    const confirmed = window.confirm(`Delete "${adventure.title}"? This cannot be undone.`);
+    const confirmed = window.confirm(
+      `Delete "${adventure.title}"? This cannot be undone.`
+    );
+
     if (!confirmed) return;
 
     persist(adventures.filter((item) => item.id !== id));
@@ -63,6 +70,7 @@ export default function App() {
   return (
     <>
       <AppHeader onHome={() => setActiveAdventureId(null)} />
+
       {activeAdventure ? (
         <WorkspacePage
           adventure={activeAdventure}

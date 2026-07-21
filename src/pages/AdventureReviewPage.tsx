@@ -1,32 +1,29 @@
 import ElementRenderer from "../components/ElementRenderer";
-import { Adventure } from "../types";
+import type { Adventure } from "../models/adventure";
 
-type Props = {
+interface AdventureReviewPageProps {
   adventure: Adventure;
   onBack: () => void;
-};
+}
 
 export default function AdventureReviewPage({
   adventure,
   onBack,
-}: Props) {
+}: AdventureReviewPageProps) {
   return (
     <main
       style={{
         maxWidth: 900,
         margin: "0 auto",
         padding: 24,
-        fontFamily:
-          "Arial, Helvetica, sans-serif",
+        fontFamily: "Arial, Helvetica, sans-serif",
         color: "#222",
       }}
     >
       <button
         type="button"
         onClick={onBack}
-        style={{
-          marginBottom: 24,
-        }}
+        style={{ marginBottom: 24 }}
       >
         ← Back to Editing
       </button>
@@ -44,8 +41,19 @@ export default function AdventureReviewPage({
             fontSize: 38,
           }}
         >
-          {adventure.name}
+          {adventure.title}
         </h1>
+
+        {adventure.summary && (
+          <p
+            style={{
+              fontSize: 18,
+              lineHeight: 1.6,
+            }}
+          >
+            {adventure.summary}
+          </p>
+        )}
 
         {adventure.purpose && (
           <section>
@@ -80,16 +88,12 @@ export default function AdventureReviewPage({
       ) : (
         adventure.missions.map((mission) => (
           <article
-            key={mission.number}
+            key={mission.id}
             style={{
               marginBottom: 56,
             }}
           >
-            <header
-              style={{
-                marginBottom: 24,
-              }}
-            >
+            <header style={{ marginBottom: 24 }}>
               <div
                 style={{
                   fontSize: 15,
@@ -99,7 +103,7 @@ export default function AdventureReviewPage({
                   color: "#666",
                 }}
               >
-                {mission.number}
+                Mission {mission.number}
               </div>
 
               <h2
@@ -162,7 +166,7 @@ export default function AdventureReviewPage({
                 }}
               >
                 <h3 style={{ marginTop: 0 }}>
-                  ✅ Real-World Action
+                  Real-World Action
                 </h3>
 
                 <p
@@ -188,7 +192,7 @@ export default function AdventureReviewPage({
                 }}
               >
                 <h3 style={{ marginTop: 0 }}>
-                  🎯 Confidence Check
+                  Confidence Check
                 </h3>
 
                 <p

@@ -1,17 +1,28 @@
 export type AdventureStatus = "draft" | "complete" | "published";
 
-export type AdventureSectionKey =
-  | "situation"
-  | "anxiety"
-  | "decision"
-  | "experience"
-  | "consequences"
-  | "capability";
+export type MissionElementType =
+  | "Story"
+  | "Instruction"
+  | "Comic Panel"
+  | "Warning"
+  | "Tip"
+  | "Question";
 
-export interface AdventureSection {
-  complete: boolean;
-  content: string;
-  answers?: string[];
+export interface MissionElement {
+  id: string;
+  type: MissionElementType;
+  title: string;
+  body: string;
+}
+
+export interface Mission {
+  id: string;
+  number: number;
+  title: string;
+  goal: string;
+  realWorldAction: string;
+  confidenceQuestion: string;
+  elements: MissionElement[];
 }
 
 export interface Adventure {
@@ -25,7 +36,13 @@ export interface Adventure {
   version: number;
   tags: string[];
   domain: string;
-  sections: Record<AdventureSectionKey, AdventureSection>;
+
+  purpose: string;
+  audience: string;
+  confidenceOutcome: string;
+
+  missions: Mission[];
+
   notes: string[];
   activity: string[];
 }

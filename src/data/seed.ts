@@ -13,39 +13,65 @@ export const seedAdventures: Adventure[] = [
     version: 1,
     tags: ["driving", "car ownership", "confidence"],
     domain: "Driver Confidence Guide",
-    sections: {
-      situation: {
-        complete: true,
-        content:
-          "Many new and less-confident drivers were never taught the practical basics of using and owning a car.",
+
+    purpose:
+      "Help new and less-confident drivers become comfortable with the practical responsibilities of driving and owning a car.",
+    audience:
+      "New drivers, inexperienced car owners, and adults who were never taught practical car basics.",
+    confidenceOutcome:
+      "The learner can handle common driving and car-ownership situations calmly and safely.",
+
+    missions: [
+      {
+        id: crypto.randomUUID(),
+        number: 0,
+        title: "Understanding the Basics",
+        goal:
+          "Understand the main systems and components of a gasoline-powered car.",
+        realWorldAction:
+          "Open the hood with an experienced person and identify the major components.",
+        confidenceQuestion:
+          "Could you explain the basic purpose of the engine, battery, oil, coolant, alternator, and transmission?",
+        elements: [
+          {
+            id: crypto.randomUUID(),
+            type: "Instruction",
+            title: "Nobody ever taught me this",
+            body:
+              "This mission gives a simple overview of how a gasoline-powered car works and why its major systems matter."
+          }
+        ]
       },
-      anxiety: {
-        complete: true,
-        content:
-          "Unfamiliar warning lights, maintenance responsibilities, and roadside problems can make driving stressful.",
+      {
+        id: crypto.randomUUID(),
+        number: 1,
+        title: "Dashboard Warning Lights",
+        goal:
+          "Recognize which dashboard warning lights require immediate attention.",
+        realWorldAction:
+          "Locate the warning-light section in the vehicle owner's manual.",
+        confidenceQuestion:
+          "Would you know what to do if a red warning light appeared while driving?",
+        elements: []
       },
-      decision: {
-        complete: true,
-        content:
-          "Learn the essential tasks and decisions that help a driver respond calmly and safely.",
-      },
-      experience: {
-        complete: false,
-        content: "",
-      },
-      consequences: {
-        complete: false,
-        content: "",
-      },
-      capability: {
-        complete: false,
-        content: "",
-      },
-    },
+      {
+        id: crypto.randomUUID(),
+        number: 2,
+        title: "Find the Owner's Manual",
+        goal:
+          "Know how to find the correct owner's manual for any vehicle.",
+        realWorldAction:
+          "Find the owner's manual for the car you drive most often.",
+        confidenceQuestion:
+          "Could you quickly find official instructions for a warning light or dashboard control?",
+        elements: []
+      }
+    ],
+
     notes: [],
     activity: [
-      "Driver Confidence Guide created",
-      "Initial Adventure information added",
-    ],
-  },
+      "Mission architecture created",
+      "Driver Confidence Guide seed data added"
+    ]
+  }
 ];
