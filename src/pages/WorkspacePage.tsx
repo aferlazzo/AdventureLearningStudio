@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import type {
   Adventure,
   Mission,
@@ -23,6 +23,9 @@ const elementTypes: MissionElementType[] = [
   "Question"
 ];
 
+const MAX_IMAGE_DIMENSION = 1600;
+const JPEG_QUALITY = 0.84;
+
 function createElement(type: MissionElementType): MissionElement {
   return {
     id: crypto.randomUUID(),
@@ -32,6 +35,8 @@ function createElement(type: MissionElementType): MissionElement {
     ...(type === "Comic Panel"
       ? {
           imageUrl: "",
+          imageDataUrl: "",
+          imageFileName: "",
           altText: "",
           dialogue: "",
           thought: "",
@@ -42,26 +47,70 @@ function createElement(type: MissionElementType): MissionElement {
   };
 }
 
+function imageSource(element: MissionElement): string {
+  return element.imageDataUrl || element.imageUrl || "";
+}
+
+function readImageFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("The image could not be read."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(source: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("The selected file is not a usable image."));
+    image.src = source;
+  });
+}
+
+async function prepareImage(file: File): Promise<string> {
+  const source = await readImageFile(file);
+  const image = await loadImage(source);
+  const scale = Math.min(
+    1,
+    MAX_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight)
+  );
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("This browser cannot prepare the image.");
+
+  context.drawImage(image, 0, 0, width, height);
+
+  const preserveTransparency = file.type === "image/png" || file.type === "image/webp";
+  return canvas.toDataURL(
+    preserveTransparency ? file.type : "image/jpeg",
+    preserveTransparency ? undefined : JPEG_QUALITY
+  );
+}
+
 function ComicPanelPreview({ element }: { element: MissionElement }) {
+  const source = imageSource(element);
+
   return (
     <article className="comic-preview-card">
       <div className="comic-preview-image">
-        {element.imageUrl ? (
-          <img src={element.imageUrl} alt={element.altText || "Comic panel"} />
+        {source ? (
+          <img src={source} alt={element.altText || "Comic panel"} />
         ) : (
           <div className="comic-image-placeholder">
             <span>Comic image</span>
-            <small>Add an image URL to preview the artwork.</small>
+            <small>Select an image or enter an image URL.</small>
           </div>
         )}
 
-        {element.dialogue && (
-          <div className="speech-bubble">{element.dialogue}</div>
-        )}
-
-        {element.thought && (
-          <div className="thought-bubble">{element.thought}</div>
-        )}
+        {element.dialogue && <div className="speech-bubble">{element.dialogue}</div>}
+        {element.thought && <div className="thought-bubble">{element.thought}</div>}
       </div>
 
       {(element.title || element.caption) && (
@@ -93,6 +142,7 @@ export function WorkspacePage({
   const [newElementType, setNewElementType] =
     useState<MissionElementType>("Comic Panel");
   const [previewOpen, setPreviewOpen] = useState(true);
+  const [imageError, setImageError] = useState<string>("");
 
   const activeMission =
     adventure.missions.find((mission) => mission.id === activeMissionId) ??
@@ -130,35 +180,26 @@ export function WorkspacePage({
       missions: [...adventure.missions, mission],
       activity: [`Mission ${nextNumber} created`, ...adventure.activity]
     });
-
     setActiveMissionId(mission.id);
   }
 
   function deleteMission(id: string) {
     const mission = adventure.missions.find((item) => item.id === id);
     if (!mission) return;
-
-    const confirmed = window.confirm(
-      `Delete Mission ${mission.number}: "${mission.title}"?`
-    );
-
-    if (!confirmed) return;
+    if (!window.confirm(`Delete Mission ${mission.number}: "${mission.title}"?`)) return;
 
     const remaining = adventure.missions.filter((item) => item.id !== id);
-
     onUpdate({
       ...adventure,
       updated: new Date().toISOString(),
       missions: remaining,
       activity: [`Mission ${mission.number} deleted`, ...adventure.activity]
     });
-
     setActiveMissionId(remaining[0]?.id ?? null);
   }
 
   function addElement() {
     if (!activeMission) return;
-
     updateMission({
       ...activeMission,
       elements: [...activeMission.elements, createElement(newElementType)]
@@ -167,7 +208,6 @@ export function WorkspacePage({
 
   function updateElement(updatedElement: MissionElement) {
     if (!activeMission) return;
-
     updateMission({
       ...activeMission,
       elements: activeMission.elements.map((element) =>
@@ -178,7 +218,6 @@ export function WorkspacePage({
 
   function deleteElement(id: string) {
     if (!activeMission) return;
-
     updateMission({
       ...activeMission,
       elements: activeMission.elements.filter((element) => element.id !== id)
@@ -187,10 +226,7 @@ export function WorkspacePage({
 
   function duplicateElement(element: MissionElement) {
     if (!activeMission) return;
-
-    const index = activeMission.elements.findIndex(
-      (candidate) => candidate.id === element.id
-    );
+    const index = activeMission.elements.findIndex((item) => item.id === element.id);
     const duplicate = {
       ...element,
       id: crypto.randomUUID(),
@@ -198,37 +234,58 @@ export function WorkspacePage({
     };
     const next = [...activeMission.elements];
     next.splice(index + 1, 0, duplicate);
-
     updateMission({ ...activeMission, elements: next });
   }
 
   function moveElement(id: string, direction: -1 | 1) {
     if (!activeMission) return;
-
-    const currentIndex = activeMission.elements.findIndex(
-      (element) => element.id === id
-    );
+    const currentIndex = activeMission.elements.findIndex((element) => element.id === id);
     const nextIndex = currentIndex + direction;
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= activeMission.elements.length) return;
 
-    if (
-      currentIndex < 0 ||
-      nextIndex < 0 ||
-      nextIndex >= activeMission.elements.length
-    ) {
+    const next = [...activeMission.elements];
+    [next[currentIndex], next[nextIndex]] = [next[nextIndex], next[currentIndex]];
+    updateMission({ ...activeMission, elements: next });
+  }
+
+  async function selectPanelImage(
+    event: ChangeEvent<HTMLInputElement>,
+    element: MissionElement
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("Please select a PNG, JPEG, WebP, GIF, or other image file.");
       return;
     }
 
-    const next = [...activeMission.elements];
-    [next[currentIndex], next[nextIndex]] = [
-      next[nextIndex],
-      next[currentIndex]
-    ];
-    updateMission({ ...activeMission, elements: next });
+    try {
+      setImageError("");
+      const dataUrl = await prepareImage(file);
+      updateElement({
+        ...element,
+        imageDataUrl: dataUrl,
+        imageFileName: file.name,
+        imageUrl: ""
+      });
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "The image could not be added.");
+    }
+  }
+
+  function removePanelImage(element: MissionElement) {
+    updateElement({
+      ...element,
+      imageDataUrl: "",
+      imageFileName: "",
+      imageUrl: ""
+    });
   }
 
   function publishHtml() {
     publishAdventureHtml(adventure);
-
     onUpdate({
       ...adventure,
       updated: new Date().toISOString(),
@@ -240,90 +297,47 @@ export function WorkspacePage({
     <main className="page-shell">
       <section className="workspace-header">
         <div>
-          <button className="link-button" onClick={onBack}>
-            ← Adventure Library
-          </button>
+          <button className="link-button" onClick={onBack}>← Adventure Library</button>
           <p className="eyebrow">Adventure Workspace</p>
           <h1>{adventure.title}</h1>
           <p>{adventure.summary}</p>
         </div>
-
         <div className="workspace-meta">
-          <span className={`status-badge ${adventure.status}`}>
-            {adventure.status}
-          </span>
+          <span className={`status-badge ${adventure.status}`}>{adventure.status}</span>
           <span>Version {adventure.version}</span>
         </div>
       </section>
 
       <section className="panel adventure-overview">
         <h2>Adventure Information</h2>
-
         <label>
           Purpose
-          <textarea
-            value={adventure.purpose}
-            onChange={(event) =>
-              onUpdate({
-                ...adventure,
-                purpose: event.target.value,
-                updated: new Date().toISOString()
-              })
-            }
-          />
+          <textarea value={adventure.purpose} onChange={(event) => onUpdate({ ...adventure, purpose: event.target.value, updated: new Date().toISOString() })} />
         </label>
-
         <label>
           Audience
-          <textarea
-            value={adventure.audience}
-            onChange={(event) =>
-              onUpdate({
-                ...adventure,
-                audience: event.target.value,
-                updated: new Date().toISOString()
-              })
-            }
-          />
+          <textarea value={adventure.audience} onChange={(event) => onUpdate({ ...adventure, audience: event.target.value, updated: new Date().toISOString() })} />
         </label>
-
         <label>
           Confidence Outcome
-          <textarea
-            value={adventure.confidenceOutcome}
-            onChange={(event) =>
-              onUpdate({
-                ...adventure,
-                confidenceOutcome: event.target.value,
-                updated: new Date().toISOString()
-              })
-            }
-          />
+          <textarea value={adventure.confidenceOutcome} onChange={(event) => onUpdate({ ...adventure, confidenceOutcome: event.target.value, updated: new Date().toISOString() })} />
         </label>
       </section>
 
       <section className="workspace-grid mission-workspace">
         <aside className="panel mission-list">
           <h2>Missions</h2>
-
           {adventure.missions.map((mission) => (
             <button
               key={mission.id}
-              className={
-                mission.id === activeMission?.id
-                  ? "mission-list-item active"
-                  : "mission-list-item"
-              }
+              className={mission.id === activeMission?.id ? "mission-list-item active" : "mission-list-item"}
               onClick={() => setActiveMissionId(mission.id)}
             >
               <strong>Mission {String(mission.number).padStart(2, "0")}</strong>
               <span>{mission.title}</span>
             </button>
           ))}
-
-          <button className="primary-button" onClick={addMission}>
-            + Add Mission
-          </button>
+          <button className="primary-button" onClick={addMission}>+ Add Mission</button>
         </aside>
 
         <section className="panel mission-editor">
@@ -331,113 +345,36 @@ export function WorkspacePage({
             <>
               <div className="mission-editor-header">
                 <div>
-                  <p className="eyebrow">
-                    Mission {String(activeMission.number).padStart(2, "0")}
-                  </p>
+                  <p className="eyebrow">Mission {String(activeMission.number).padStart(2, "0")}</p>
                   <h2>{activeMission.title}</h2>
                 </div>
-
-                <button
-                  className="danger-link"
-                  onClick={() => deleteMission(activeMission.id)}
-                >
-                  Delete Mission
-                </button>
+                <button className="danger-link" onClick={() => deleteMission(activeMission.id)}>Delete Mission</button>
               </div>
 
-              <label>
-                Title
-                <input
-                  value={activeMission.title}
-                  onChange={(event) =>
-                    updateMission({
-                      ...activeMission,
-                      title: event.target.value
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                Goal
-                <textarea
-                  value={activeMission.goal}
-                  onChange={(event) =>
-                    updateMission({
-                      ...activeMission,
-                      goal: event.target.value
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                Real-World Action
-                <textarea
-                  value={activeMission.realWorldAction}
-                  onChange={(event) =>
-                    updateMission({
-                      ...activeMission,
-                      realWorldAction: event.target.value
-                    })
-                  }
-                />
-              </label>
-
-              <label>
-                Confidence Question
-                <textarea
-                  value={activeMission.confidenceQuestion}
-                  onChange={(event) =>
-                    updateMission({
-                      ...activeMission,
-                      confidenceQuestion: event.target.value
-                    })
-                  }
-                />
-              </label>
+              <label>Title<input value={activeMission.title} onChange={(event) => updateMission({ ...activeMission, title: event.target.value })} /></label>
+              <label>Goal<textarea value={activeMission.goal} onChange={(event) => updateMission({ ...activeMission, goal: event.target.value })} /></label>
+              <label>Real-World Action<textarea value={activeMission.realWorldAction} onChange={(event) => updateMission({ ...activeMission, realWorldAction: event.target.value })} /></label>
+              <label>Confidence Question<textarea value={activeMission.confidenceQuestion} onChange={(event) => updateMission({ ...activeMission, confidenceQuestion: event.target.value })} /></label>
 
               <hr />
-
               <div className="element-builder-heading">
-                <div>
-                  <p className="eyebrow">Comic-infused sequence</p>
-                  <h2>Mission Elements</h2>
-                </div>
-                <button
-                  className="secondary-button"
-                  onClick={() => setPreviewOpen((open) => !open)}
-                >
-                  {previewOpen ? "Hide Preview" : "Show Preview"}
-                </button>
+                <div><p className="eyebrow">Comic-infused sequence</p><h2>Mission Elements</h2></div>
+                <button className="secondary-button" onClick={() => setPreviewOpen((open) => !open)}>{previewOpen ? "Hide Preview" : "Show Preview"}</button>
               </div>
 
               <div className="add-element-bar">
-                <select
-                  value={newElementType}
-                  onChange={(event) =>
-                    setNewElementType(event.target.value as MissionElementType)
-                  }
-                  aria-label="Element type"
-                >
-                  {elementTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
+                <select value={newElementType} onChange={(event) => setNewElementType(event.target.value as MissionElementType)} aria-label="Element type">
+                  {elementTypes.map((type) => <option key={type} value={type}>{type}</option>)}
                 </select>
-                <button className="primary-button" onClick={addElement}>
-                  + Add {newElementType}
-                </button>
+                <button className="primary-button" onClick={addElement}>+ Add {newElementType}</button>
               </div>
+
+              {imageError && <p className="image-upload-error" role="alert">{imageError}</p>}
 
               {activeMission.elements.length === 0 ? (
                 <div className="empty-builder-state">
                   <h3>Start the learner’s journey</h3>
-                  <p>
-                    Add a Comic Panel, Story, or Instruction. Elements can be
-                    rearranged so story and teaching unfold together.
-                  </p>
+                  <p>Add a Comic Panel, Story, or Instruction. Elements can be rearranged so story and teaching unfold together.</p>
                 </div>
               ) : (
                 <div className={previewOpen ? "builder-with-preview" : ""}>
@@ -445,181 +382,42 @@ export function WorkspacePage({
                     {activeMission.elements.map((element, index) => (
                       <article className="element-editor-card" key={element.id}>
                         <div className="element-card-toolbar">
-                          <div>
-                            <span className="element-order">{index + 1}</span>
-                            <strong>{element.type}</strong>
-                          </div>
+                          <div><span className="element-order">{index + 1}</span><strong>{element.type}</strong></div>
                           <div className="element-actions">
-                            <button
-                              className="icon-button"
-                              onClick={() => moveElement(element.id, -1)}
-                              disabled={index === 0}
-                              aria-label="Move element up"
-                              title="Move up"
-                            >
-                              ↑
-                            </button>
-                            <button
-                              className="icon-button"
-                              onClick={() => moveElement(element.id, 1)}
-                              disabled={
-                                index === activeMission.elements.length - 1
-                              }
-                              aria-label="Move element down"
-                              title="Move down"
-                            >
-                              ↓
-                            </button>
-                            <button
-                              className="icon-button"
-                              onClick={() => duplicateElement(element)}
-                              aria-label="Duplicate element"
-                              title="Duplicate"
-                            >
-                              ⧉
-                            </button>
-                            <button
-                              className="danger-link"
-                              onClick={() => deleteElement(element.id)}
-                            >
-                              Delete
-                            </button>
+                            <button className="icon-button" onClick={() => moveElement(element.id, -1)} disabled={index === 0} title="Move up">↑</button>
+                            <button className="icon-button" onClick={() => moveElement(element.id, 1)} disabled={index === activeMission.elements.length - 1} title="Move down">↓</button>
+                            <button className="icon-button" onClick={() => duplicateElement(element)} title="Duplicate">⧉</button>
+                            <button className="danger-link" onClick={() => deleteElement(element.id)}>Delete</button>
                           </div>
                         </div>
 
-                        <label>
-                          Element type
-                          <select
-                            value={element.type}
-                            onChange={(event) =>
-                              updateElement({
-                                ...element,
-                                type: event.target.value as MissionElementType
-                              })
-                            }
-                          >
-                            {elementTypes.map((type) => (
-                              <option key={type} value={type}>
-                                {type}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label>
-                          Title
-                          <input
-                            value={element.title}
-                            onChange={(event) =>
-                              updateElement({
-                                ...element,
-                                title: event.target.value
-                              })
-                            }
-                          />
-                        </label>
+                        <label>Element type<select value={element.type} onChange={(event) => updateElement({ ...element, type: event.target.value as MissionElementType })}>{elementTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+                        <label>Title<input value={element.title} onChange={(event) => updateElement({ ...element, title: event.target.value })} /></label>
 
                         {element.type === "Comic Panel" ? (
                           <div className="comic-panel-fields">
-                            <label>
-                              Image URL
-                              <input
-                                type="url"
-                                value={element.imageUrl ?? ""}
-                                placeholder="https://example.com/panel.png"
-                                onChange={(event) =>
-                                  updateElement({
-                                    ...element,
-                                    imageUrl: event.target.value
-                                  })
-                                }
-                              />
-                            </label>
+                            <div className="image-picker-block">
+                              <span className="field-label">Panel artwork</span>
+                              <div className="image-picker-actions">
+                                <label className="secondary-button file-picker-button">
+                                  Select image
+                                  <input type="file" accept="image/*" onChange={(event) => void selectPanelImage(event, element)} />
+                                </label>
+                                {imageSource(element) && <button className="danger-link" type="button" onClick={() => removePanelImage(element)}>Remove image</button>}
+                              </div>
+                              {element.imageFileName && <small className="selected-file-name">Embedded: {element.imageFileName}</small>}
+                              <small>Large images are resized to fit within {MAX_IMAGE_DIMENSION}px before being saved.</small>
+                            </div>
 
-                            <label>
-                              Alternative text
-                              <input
-                                value={element.altText ?? ""}
-                                placeholder="Describe what the learner sees"
-                                onChange={(event) =>
-                                  updateElement({
-                                    ...element,
-                                    altText: event.target.value
-                                  })
-                                }
-                              />
-                            </label>
-
-                            <label>
-                              Dialogue
-                              <textarea
-                                value={element.dialogue ?? ""}
-                                placeholder="What does the character say?"
-                                onChange={(event) =>
-                                  updateElement({
-                                    ...element,
-                                    dialogue: event.target.value
-                                  })
-                                }
-                              />
-                            </label>
-
-                            <label>
-                              Thought
-                              <textarea
-                                value={element.thought ?? ""}
-                                placeholder="What is the character thinking?"
-                                onChange={(event) =>
-                                  updateElement({
-                                    ...element,
-                                    thought: event.target.value
-                                  })
-                                }
-                              />
-                            </label>
-
-                            <label>
-                              Caption
-                              <textarea
-                                value={element.caption ?? ""}
-                                placeholder="Narration beneath the panel"
-                                onChange={(event) =>
-                                  updateElement({
-                                    ...element,
-                                    caption: event.target.value
-                                  })
-                                }
-                              />
-                            </label>
-
-                            <label>
-                              Learning moment
-                              <textarea
-                                value={element.teachingNote ?? ""}
-                                placeholder="What should the learner notice here?"
-                                onChange={(event) =>
-                                  updateElement({
-                                    ...element,
-                                    teachingNote: event.target.value
-                                  })
-                                }
-                              />
-                            </label>
+                            <label>Or use an image URL<input type="url" value={element.imageUrl ?? ""} placeholder="https://example.com/panel.png" onChange={(event) => updateElement({ ...element, imageUrl: event.target.value, imageDataUrl: "", imageFileName: "" })} /></label>
+                            <label>Alternative text<input value={element.altText ?? ""} placeholder="Describe what the learner sees" onChange={(event) => updateElement({ ...element, altText: event.target.value })} /></label>
+                            <label>Dialogue<textarea value={element.dialogue ?? ""} placeholder="What does the character say?" onChange={(event) => updateElement({ ...element, dialogue: event.target.value })} /></label>
+                            <label>Thought<textarea value={element.thought ?? ""} placeholder="What is the character thinking?" onChange={(event) => updateElement({ ...element, thought: event.target.value })} /></label>
+                            <label>Caption<textarea value={element.caption ?? ""} placeholder="Narration beneath the panel" onChange={(event) => updateElement({ ...element, caption: event.target.value })} /></label>
+                            <label>Learning moment<textarea value={element.teachingNote ?? ""} placeholder="What should the learner notice here?" onChange={(event) => updateElement({ ...element, teachingNote: event.target.value })} /></label>
                           </div>
                         ) : (
-                          <label>
-                            Content
-                            <textarea
-                              value={element.body}
-                              placeholder="Write the learner-facing content"
-                              onChange={(event) =>
-                                updateElement({
-                                  ...element,
-                                  body: event.target.value
-                                })
-                              }
-                            />
-                          </label>
+                          <label>Content<textarea value={element.body} placeholder="Write the learner-facing content" onChange={(event) => updateElement({ ...element, body: event.target.value })} /></label>
                         )}
                       </article>
                     ))}
@@ -627,31 +425,15 @@ export function WorkspacePage({
 
                   {previewOpen && (
                     <aside className="mission-preview-pane">
-                      <div className="preview-sticky-heading">
-                        <p className="eyebrow">Learner preview</p>
-                        <h2>{activeMission.title}</h2>
-                      </div>
-
+                      <div className="preview-sticky-heading"><p className="eyebrow">Learner preview</p><h2>{activeMission.title}</h2></div>
                       {activeMission.elements.map((element) =>
                         element.type === "Comic Panel" ? (
-                          <ComicPanelPreview
-                            key={element.id}
-                            element={element}
-                          />
+                          <ComicPanelPreview key={element.id} element={element} />
                         ) : (
-                          <article
-                            className={`learner-element-preview ${element.type
-                              .toLowerCase()
-                              .replace(/\s+/g, "-")}`}
-                            key={element.id}
-                          >
+                          <article className={`learner-element-preview ${element.type.toLowerCase().replace(/\s+/g, "-")}`} key={element.id}>
                             <p className="eyebrow">{element.type}</p>
                             {element.title && <h3>{element.title}</h3>}
-                            {element.body ? (
-                              <p>{element.body}</p>
-                            ) : (
-                              <p className="preview-empty">No content yet.</p>
-                            )}
+                            {element.body ? <p>{element.body}</p> : <p className="preview-empty">No content yet.</p>}
                           </article>
                         )
                       )}
@@ -660,38 +442,18 @@ export function WorkspacePage({
                 </div>
               )}
             </>
-          ) : (
-            <p>Create a Mission to begin authoring.</p>
-          )}
+          ) : <p>Create a Mission to begin authoring.</p>}
         </section>
 
         <aside className="panel activity-panel">
           <h2>Recent Activity</h2>
-
-          <ul>
-            {adventure.activity.map((item, index) => (
-              <li key={`${item}-${index}`}>{item}</li>
-            ))}
-          </ul>
-
+          <ul>{adventure.activity.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>
           <hr />
-
           <h2>Publishing</h2>
-          <button className="primary-button" onClick={publishHtml}>
-            Publish HTML
-          </button>
-          <p className="autosave-note">
-            Downloads a self-contained web page that opens in any browser.
-          </p>
-
+          <button className="primary-button" onClick={publishHtml}>Publish HTML</button>
+          <p className="autosave-note">Downloads a self-contained web page. Selected comic images are embedded inside it.</p>
           <hr />
-
-          <button
-            className="danger-link"
-            onClick={() => onDelete(adventure.id)}
-          >
-            Delete Adventure
-          </button>
+          <button className="danger-link" onClick={() => onDelete(adventure.id)}>Delete Adventure</button>
         </aside>
       </section>
     </main>
