@@ -5,6 +5,7 @@ import "./styles/global.css";
 import "./styles/comic-builder.css";
 import "./styles/image-upload.css";
 import "./styles/studio-home.css";
+import "./styles/workspace-experience.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
