@@ -7,6 +7,7 @@ import "./styles/image-upload.css";
 import "./styles/studio-home.css";
 import "./styles/workspace-polish.css";
 import "./styles/guided-workspace.css";
+import "./styles/focused-sequence.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
