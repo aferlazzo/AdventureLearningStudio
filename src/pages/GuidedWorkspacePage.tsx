@@ -68,6 +68,8 @@ export function GuidedWorkspacePage(props: GuidedWorkspacePageProps) {
     [adventure.missions, activeMissionId]
   );
 
+  const displayedSituation = situation || (mission?.title === "Untitled Mission" ? "" : mission?.title ?? "");
+
   if (advanced) {
     return <WorkspacePage {...props} />;
   }
@@ -97,9 +99,21 @@ export function GuidedWorkspacePage(props: GuidedWorkspacePageProps) {
     setStep("situation");
   }
 
+  function chooseMission(id: string) {
+    const chosen = adventure.missions.find((item) => item.id === id);
+    setActiveMissionId(id);
+    setSituation(chosen && chosen.title !== "Untitled Mission" ? chosen.title : "");
+    setFeeling("");
+    setScene("");
+    setStep("situation");
+  }
+
   function saveSituation() {
-    if (!mission || !situation.trim()) return;
-    persistMission({ ...mission, title: situation.trim() });
+    if (!mission) return;
+    const nextSituation = displayedSituation.trim();
+    if (!nextSituation) return;
+    setSituation(nextSituation);
+    persistMission({ ...mission, title: nextSituation });
     setStep("learner");
   }
 
@@ -140,7 +154,7 @@ export function GuidedWorkspacePage(props: GuidedWorkspacePageProps) {
           <hr />
           <button className="primary-button" onClick={beginMission}>+ Guided Mission</button>
           {adventure.missions.map((item) => (
-            <button key={item.id} className={item.id === mission?.id ? "mission-choice active" : "mission-choice"} onClick={() => { setActiveMissionId(item.id); setStep("situation"); }}>
+            <button key={item.id} className={item.id === mission?.id ? "mission-choice active" : "mission-choice"} onClick={() => chooseMission(item.id)}>
               Mission {String(item.number).padStart(2, "0")}<small>{item.title}</small>
             </button>
           ))}
@@ -159,8 +173,8 @@ export function GuidedWorkspacePage(props: GuidedWorkspacePageProps) {
             <p className="eyebrow">Begin with reality</p>
             <h2>What situation does the learner face?</h2>
             <p className="guide-coach">Use ordinary language. Examples: “A warning light comes on” or “The phone will not connect to the dashboard.”</p>
-            <textarea className="guide-answer" autoFocus value={situation || (mission.title === "Untitled Mission" ? "" : mission.title)} onChange={(event) => setSituation(event.target.value)} placeholder="Describe the situation..." />
-            <div className="guide-actions"><span>A recognizable situation gives the story somewhere to begin.</span><button className="primary-button" onClick={saveSituation}>Meet the learner →</button></div>
+            <textarea className="guide-answer" autoFocus value={displayedSituation} onChange={(event) => setSituation(event.target.value)} placeholder="Describe the situation..." />
+            <div className="guide-actions"><span>A recognizable situation gives the story somewhere to begin.</span><button className="primary-button" disabled={!displayedSituation.trim()} onClick={saveSituation}>Meet the learner →</button></div>
           </>}
 
           {mission && step === "learner" && <>
