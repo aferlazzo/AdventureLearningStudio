@@ -8,6 +8,7 @@ import "./styles/studio-home.css";
 import "./styles/workspace-experience.css";
 import "./styles/guided-workspace.css";
 import "./styles/focused-sequence.css";
+import "./styles/storyboard-studio.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
