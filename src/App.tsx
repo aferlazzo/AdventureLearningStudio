@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AppHeader } from "./components/AppHeader";
 import { LibraryPage } from "./pages/LibraryPage";
-import { WorkspacePage } from "./pages/WorkspacePage";
+import { GuidedWorkspacePage } from "./pages/GuidedWorkspacePage";
 import { loadAdventures, saveAdventures } from "./services/adventureStore";
 import type { Adventure } from "./models/adventure";
 
@@ -72,7 +72,7 @@ export default function App() {
       <AppHeader onHome={() => setActiveAdventureId(null)} />
 
       {activeAdventure ? (
-        <WorkspacePage
+        <GuidedWorkspacePage
           adventure={activeAdventure}
           onBack={() => setActiveAdventureId(null)}
           onDelete={deleteAdventure}
