@@ -1,5 +1,10 @@
 import { useState } from "react";
-import type { Adventure, Mission } from "../models/adventure";
+import type {
+  Adventure,
+  Mission,
+  MissionElement,
+  MissionElementType
+} from "../models/adventure";
 import { publishAdventureHtml } from "../services/htmlPublisher";
 
 interface WorkspacePageProps {
@@ -7,6 +12,73 @@ interface WorkspacePageProps {
   onBack: () => void;
   onDelete: (id: string) => void;
   onUpdate: (adventure: Adventure) => void;
+}
+
+const elementTypes: MissionElementType[] = [
+  "Story",
+  "Comic Panel",
+  "Instruction",
+  "Warning",
+  "Tip",
+  "Question"
+];
+
+function createElement(type: MissionElementType): MissionElement {
+  return {
+    id: crypto.randomUUID(),
+    type,
+    title: type === "Comic Panel" ? "New comic panel" : `New ${type}`,
+    body: "",
+    ...(type === "Comic Panel"
+      ? {
+          imageUrl: "",
+          altText: "",
+          dialogue: "",
+          thought: "",
+          caption: "",
+          teachingNote: ""
+        }
+      : {})
+  };
+}
+
+function ComicPanelPreview({ element }: { element: MissionElement }) {
+  return (
+    <article className="comic-preview-card">
+      <div className="comic-preview-image">
+        {element.imageUrl ? (
+          <img src={element.imageUrl} alt={element.altText || "Comic panel"} />
+        ) : (
+          <div className="comic-image-placeholder">
+            <span>Comic image</span>
+            <small>Add an image URL to preview the artwork.</small>
+          </div>
+        )}
+
+        {element.dialogue && (
+          <div className="speech-bubble">{element.dialogue}</div>
+        )}
+
+        {element.thought && (
+          <div className="thought-bubble">{element.thought}</div>
+        )}
+      </div>
+
+      {(element.title || element.caption) && (
+        <div className="comic-preview-copy">
+          {element.title && <h3>{element.title}</h3>}
+          {element.caption && <p>{element.caption}</p>}
+        </div>
+      )}
+
+      {element.teachingNote && (
+        <aside className="comic-teaching-note">
+          <strong>Learning moment</strong>
+          <p>{element.teachingNote}</p>
+        </aside>
+      )}
+    </article>
+  );
 }
 
 export function WorkspacePage({
@@ -18,6 +90,9 @@ export function WorkspacePage({
   const [activeMissionId, setActiveMissionId] = useState<string | null>(
     adventure.missions[0]?.id ?? null
   );
+  const [newElementType, setNewElementType] =
+    useState<MissionElementType>("Comic Panel");
+  const [previewOpen, setPreviewOpen] = useState(true);
 
   const activeMission =
     adventure.missions.find((mission) => mission.id === activeMissionId) ??
@@ -79,6 +154,76 @@ export function WorkspacePage({
     });
 
     setActiveMissionId(remaining[0]?.id ?? null);
+  }
+
+  function addElement() {
+    if (!activeMission) return;
+
+    updateMission({
+      ...activeMission,
+      elements: [...activeMission.elements, createElement(newElementType)]
+    });
+  }
+
+  function updateElement(updatedElement: MissionElement) {
+    if (!activeMission) return;
+
+    updateMission({
+      ...activeMission,
+      elements: activeMission.elements.map((element) =>
+        element.id === updatedElement.id ? updatedElement : element
+      )
+    });
+  }
+
+  function deleteElement(id: string) {
+    if (!activeMission) return;
+
+    updateMission({
+      ...activeMission,
+      elements: activeMission.elements.filter((element) => element.id !== id)
+    });
+  }
+
+  function duplicateElement(element: MissionElement) {
+    if (!activeMission) return;
+
+    const index = activeMission.elements.findIndex(
+      (candidate) => candidate.id === element.id
+    );
+    const duplicate = {
+      ...element,
+      id: crypto.randomUUID(),
+      title: element.title ? `${element.title} copy` : "Copy"
+    };
+    const next = [...activeMission.elements];
+    next.splice(index + 1, 0, duplicate);
+
+    updateMission({ ...activeMission, elements: next });
+  }
+
+  function moveElement(id: string, direction: -1 | 1) {
+    if (!activeMission) return;
+
+    const currentIndex = activeMission.elements.findIndex(
+      (element) => element.id === id
+    );
+    const nextIndex = currentIndex + direction;
+
+    if (
+      currentIndex < 0 ||
+      nextIndex < 0 ||
+      nextIndex >= activeMission.elements.length
+    ) {
+      return;
+    }
+
+    const next = [...activeMission.elements];
+    [next[currentIndex], next[nextIndex]] = [
+      next[nextIndex],
+      next[currentIndex]
+    ];
+    updateMission({ ...activeMission, elements: next });
   }
 
   function publishHtml() {
@@ -254,18 +399,265 @@ export function WorkspacePage({
 
               <hr />
 
-              <h2>Mission Elements</h2>
+              <div className="element-builder-heading">
+                <div>
+                  <p className="eyebrow">Comic-infused sequence</p>
+                  <h2>Mission Elements</h2>
+                </div>
+                <button
+                  className="secondary-button"
+                  onClick={() => setPreviewOpen((open) => !open)}
+                >
+                  {previewOpen ? "Hide Preview" : "Show Preview"}
+                </button>
+              </div>
+
+              <div className="add-element-bar">
+                <select
+                  value={newElementType}
+                  onChange={(event) =>
+                    setNewElementType(event.target.value as MissionElementType)
+                  }
+                  aria-label="Element type"
+                >
+                  {elementTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                <button className="primary-button" onClick={addElement}>
+                  + Add {newElementType}
+                </button>
+              </div>
 
               {activeMission.elements.length === 0 ? (
-                <p>No Mission Elements yet.</p>
+                <div className="empty-builder-state">
+                  <h3>Start the learner’s journey</h3>
+                  <p>
+                    Add a Comic Panel, Story, or Instruction. Elements can be
+                    rearranged so story and teaching unfold together.
+                  </p>
+                </div>
               ) : (
-                activeMission.elements.map((element) => (
-                  <article className="mission-element-card" key={element.id}>
-                    <strong>{element.type}</strong>
-                    <h3>{element.title}</h3>
-                    <p>{element.body}</p>
-                  </article>
-                ))
+                <div className={previewOpen ? "builder-with-preview" : ""}>
+                  <div className="element-editor-list">
+                    {activeMission.elements.map((element, index) => (
+                      <article className="element-editor-card" key={element.id}>
+                        <div className="element-card-toolbar">
+                          <div>
+                            <span className="element-order">{index + 1}</span>
+                            <strong>{element.type}</strong>
+                          </div>
+                          <div className="element-actions">
+                            <button
+                              className="icon-button"
+                              onClick={() => moveElement(element.id, -1)}
+                              disabled={index === 0}
+                              aria-label="Move element up"
+                              title="Move up"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              className="icon-button"
+                              onClick={() => moveElement(element.id, 1)}
+                              disabled={
+                                index === activeMission.elements.length - 1
+                              }
+                              aria-label="Move element down"
+                              title="Move down"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              className="icon-button"
+                              onClick={() => duplicateElement(element)}
+                              aria-label="Duplicate element"
+                              title="Duplicate"
+                            >
+                              ⧉
+                            </button>
+                            <button
+                              className="danger-link"
+                              onClick={() => deleteElement(element.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        <label>
+                          Element type
+                          <select
+                            value={element.type}
+                            onChange={(event) =>
+                              updateElement({
+                                ...element,
+                                type: event.target.value as MissionElementType
+                              })
+                            }
+                          >
+                            {elementTypes.map((type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label>
+                          Title
+                          <input
+                            value={element.title}
+                            onChange={(event) =>
+                              updateElement({
+                                ...element,
+                                title: event.target.value
+                              })
+                            }
+                          />
+                        </label>
+
+                        {element.type === "Comic Panel" ? (
+                          <div className="comic-panel-fields">
+                            <label>
+                              Image URL
+                              <input
+                                type="url"
+                                value={element.imageUrl ?? ""}
+                                placeholder="https://example.com/panel.png"
+                                onChange={(event) =>
+                                  updateElement({
+                                    ...element,
+                                    imageUrl: event.target.value
+                                  })
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Alternative text
+                              <input
+                                value={element.altText ?? ""}
+                                placeholder="Describe what the learner sees"
+                                onChange={(event) =>
+                                  updateElement({
+                                    ...element,
+                                    altText: event.target.value
+                                  })
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Dialogue
+                              <textarea
+                                value={element.dialogue ?? ""}
+                                placeholder="What does the character say?"
+                                onChange={(event) =>
+                                  updateElement({
+                                    ...element,
+                                    dialogue: event.target.value
+                                  })
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Thought
+                              <textarea
+                                value={element.thought ?? ""}
+                                placeholder="What is the character thinking?"
+                                onChange={(event) =>
+                                  updateElement({
+                                    ...element,
+                                    thought: event.target.value
+                                  })
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Caption
+                              <textarea
+                                value={element.caption ?? ""}
+                                placeholder="Narration beneath the panel"
+                                onChange={(event) =>
+                                  updateElement({
+                                    ...element,
+                                    caption: event.target.value
+                                  })
+                                }
+                              />
+                            </label>
+
+                            <label>
+                              Learning moment
+                              <textarea
+                                value={element.teachingNote ?? ""}
+                                placeholder="What should the learner notice here?"
+                                onChange={(event) =>
+                                  updateElement({
+                                    ...element,
+                                    teachingNote: event.target.value
+                                  })
+                                }
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <label>
+                            Content
+                            <textarea
+                              value={element.body}
+                              placeholder="Write the learner-facing content"
+                              onChange={(event) =>
+                                updateElement({
+                                  ...element,
+                                  body: event.target.value
+                                })
+                              }
+                            />
+                          </label>
+                        )}
+                      </article>
+                    ))}
+                  </div>
+
+                  {previewOpen && (
+                    <aside className="mission-preview-pane">
+                      <div className="preview-sticky-heading">
+                        <p className="eyebrow">Learner preview</p>
+                        <h2>{activeMission.title}</h2>
+                      </div>
+
+                      {activeMission.elements.map((element) =>
+                        element.type === "Comic Panel" ? (
+                          <ComicPanelPreview
+                            key={element.id}
+                            element={element}
+                          />
+                        ) : (
+                          <article
+                            className={`learner-element-preview ${element.type
+                              .toLowerCase()
+                              .replace(/\s+/g, "-")}`}
+                            key={element.id}
+                          >
+                            <p className="eyebrow">{element.type}</p>
+                            {element.title && <h3>{element.title}</h3>}
+                            {element.body ? (
+                              <p>{element.body}</p>
+                            ) : (
+                              <p className="preview-empty">No content yet.</p>
+                            )}
+                          </article>
+                        )
+                      )}
+                    </aside>
+                  )}
+                </div>
               )}
             </>
           ) : (
