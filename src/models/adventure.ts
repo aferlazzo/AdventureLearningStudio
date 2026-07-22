@@ -13,6 +13,14 @@ export interface MissionElement {
   type: MissionElementType;
   title: string;
   body: string;
+
+  // Comic Panel fields are optional so existing saved Adventures remain valid.
+  imageUrl?: string;
+  altText?: string;
+  dialogue?: string;
+  thought?: string;
+  caption?: string;
+  teachingNote?: string;
 }
 
 export interface Mission {
