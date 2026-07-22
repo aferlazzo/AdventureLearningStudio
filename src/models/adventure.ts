@@ -16,6 +16,8 @@ export interface MissionElement {
 
   // Comic Panel fields are optional so existing saved Adventures remain valid.
   imageUrl?: string;
+  imageDataUrl?: string;
+  imageFileName?: string;
   altText?: string;
   dialogue?: string;
   thought?: string;
