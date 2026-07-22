@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import type { Adventure, Mission, MissionElement, MissionElementType } from "../models/adventure";
 import { publishAdventureHtml } from "../services/htmlPublisher";
 
@@ -90,15 +90,35 @@ function missionCompletion(mission: Mission): { setup: boolean; sequence: boolea
   return { setup, sequence, practice, score: [setup, sequence, practice].filter(Boolean).length };
 }
 
+function elementSummary(element: MissionElement): string {
+  if (element.type === "Comic Panel") {
+    return element.caption || element.dialogue || element.thought || (imageSource(element) ? "Artwork added" : "Add artwork and story");
+  }
+  return element.body || "Add learner-facing content";
+}
+
 export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: WorkspacePageProps) {
   const [activeMissionId, setActiveMissionId] = useState<string | null>(adventure.missions[0]?.id ?? null);
   const [newElementType, setNewElementType] = useState<MissionElementType>("Comic Panel");
   const [authoringView, setAuthoringView] = useState<AuthoringView>("setup");
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [imageError, setImageError] = useState("");
   const [adventureInfoOpen, setAdventureInfoOpen] = useState(false);
 
   const activeMission = adventure.missions.find((mission) => mission.id === activeMissionId) ?? adventure.missions[0];
   const completion = activeMission ? missionCompletion(activeMission) : null;
+  const selectedElement = activeMission?.elements.find((element) => element.id === selectedElementId) ?? activeMission?.elements[0];
+  const selectedIndex = selectedElement && activeMission ? activeMission.elements.findIndex((element) => element.id === selectedElement.id) : -1;
+
+  useEffect(() => {
+    if (!activeMission) {
+      setSelectedElementId(null);
+      return;
+    }
+    if (!activeMission.elements.some((element) => element.id === selectedElementId)) {
+      setSelectedElementId(activeMission.elements[0]?.id ?? null);
+    }
+  }, [activeMission, selectedElementId]);
 
   function updateMission(updatedMission: Mission) {
     onUpdate({
@@ -109,7 +129,9 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
   }
 
   function chooseMission(id: string) {
+    const mission = adventure.missions.find((item) => item.id === id);
     setActiveMissionId(id);
+    setSelectedElementId(mission?.elements[0]?.id ?? null);
     setAuthoringView("setup");
   }
 
@@ -118,6 +140,7 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
     const mission: Mission = { id: crypto.randomUUID(), number: nextNumber, title: "Untitled Mission", goal: "", realWorldAction: "", confidenceQuestion: "", elements: [] };
     onUpdate({ ...adventure, updated: new Date().toISOString(), missions: [...adventure.missions, mission], activity: [`Mission ${nextNumber} created`, ...adventure.activity] });
     setActiveMissionId(mission.id);
+    setSelectedElementId(null);
     setAuthoringView("setup");
   }
 
@@ -127,12 +150,15 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
     const remaining = adventure.missions.filter((item) => item.id !== id);
     onUpdate({ ...adventure, updated: new Date().toISOString(), missions: remaining, activity: [`Mission ${mission.number} deleted`, ...adventure.activity] });
     setActiveMissionId(remaining[0]?.id ?? null);
+    setSelectedElementId(remaining[0]?.elements[0]?.id ?? null);
     setAuthoringView("setup");
   }
 
   function addElement() {
     if (!activeMission) return;
-    updateMission({ ...activeMission, elements: [...activeMission.elements, createElement(newElementType)] });
+    const element = createElement(newElementType);
+    updateMission({ ...activeMission, elements: [...activeMission.elements, element] });
+    setSelectedElementId(element.id);
   }
 
   function updateElement(updatedElement: MissionElement) {
@@ -142,7 +168,10 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
 
   function deleteElement(id: string) {
     if (!activeMission) return;
-    updateMission({ ...activeMission, elements: activeMission.elements.filter((element) => element.id !== id) });
+    const index = activeMission.elements.findIndex((element) => element.id === id);
+    const next = activeMission.elements.filter((element) => element.id !== id);
+    updateMission({ ...activeMission, elements: next });
+    setSelectedElementId(next[Math.min(index, next.length - 1)]?.id ?? null);
   }
 
   function duplicateElement(element: MissionElement) {
@@ -152,6 +181,7 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
     const next = [...activeMission.elements];
     next.splice(index + 1, 0, duplicate);
     updateMission({ ...activeMission, elements: next });
+    setSelectedElementId(duplicate.id);
   }
 
   function moveElement(id: string, direction: -1 | 1) {
@@ -237,24 +267,49 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
               <div className="stage-actions"><span>{completion.setup && completion.practice ? "Mission foundation ready" : "Complete the four fields to shape the mission."}</span><button className="primary-button" onClick={() => setAuthoringView("sequence")}>Build the sequence →</button></div>
             </section>}
 
-            {authoringView === "sequence" && <section className="authoring-stage sequence-stage">
-              <div className="element-builder-heading"><div><p className="eyebrow">Step 2</p><h2>Build the learner’s journey</h2><p>Alternate story, comics, teaching, and questions in the order the learner should experience them.</p></div><button className="secondary-button" onClick={() => setAuthoringView("preview")}>Preview mission</button></div>
+            {authoringView === "sequence" && <section className="authoring-stage sequence-stage focused-sequence-stage">
+              <div className="stage-heading"><p className="eyebrow">Step 2</p><h2>Build the learner’s journey</h2><p>Use the strip to select a moment, then focus on shaping that single part of the experience.</p></div>
               <div className="add-element-bar"><select value={newElementType} onChange={(event) => setNewElementType(event.target.value as MissionElementType)} aria-label="Element type">{elementTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select><button className="primary-button" onClick={addElement}>+ Add {newElementType}</button></div>
               {imageError && <p className="image-upload-error" role="alert">{imageError}</p>}
-              {activeMission.elements.length === 0 ? <div className="empty-builder-state"><h3>Start with the situation</h3><p>Add a Story or Comic Panel that places the learner inside a real-world moment.</p></div> : <div className="element-editor-list">{activeMission.elements.map((element, index) => <article className="element-editor-card" key={element.id}>
-                <div className="element-card-toolbar"><div><span className="element-order">{index + 1}</span><strong>{element.type}</strong></div><div className="element-actions"><button className="icon-button" onClick={() => moveElement(element.id, -1)} disabled={index === 0} title="Move up">↑</button><button className="icon-button" onClick={() => moveElement(element.id, 1)} disabled={index === activeMission.elements.length - 1} title="Move down">↓</button><button className="icon-button" onClick={() => duplicateElement(element)} title="Duplicate">⧉</button><button className="danger-link" onClick={() => deleteElement(element.id)}>Delete</button></div></div>
-                <label>Element type<select value={element.type} onChange={(event) => updateElement({ ...element, type: event.target.value as MissionElementType })}>{elementTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
-                <label>Title<input value={element.title} onChange={(event) => updateElement({ ...element, title: event.target.value })} /></label>
-                {element.type === "Comic Panel" ? <div className="comic-panel-fields">
-                  <div className="image-picker-block"><span className="field-label">Panel artwork</span><div className="image-picker-actions"><label className="secondary-button file-picker-button">Select image<input type="file" accept="image/*" onChange={(event) => void selectPanelImage(event, element)} /></label>{imageSource(element) && <button className="danger-link" type="button" onClick={() => removePanelImage(element)}>Remove image</button>}</div>{element.imageFileName && <small className="selected-file-name">Embedded: {element.imageFileName}</small>}<small>Large images are resized to fit within {MAX_IMAGE_DIMENSION}px before being saved.</small></div>
-                  <label>Or use an image URL<input type="url" value={element.imageUrl ?? ""} placeholder="https://example.com/panel.png" onChange={(event) => updateElement({ ...element, imageUrl: event.target.value, imageDataUrl: "", imageFileName: "" })} /></label>
-                  <label>Alternative text<input value={element.altText ?? ""} placeholder="Describe what the learner sees" onChange={(event) => updateElement({ ...element, altText: event.target.value })} /></label>
-                  <label>Dialogue<textarea value={element.dialogue ?? ""} placeholder="What does the character say?" onChange={(event) => updateElement({ ...element, dialogue: event.target.value })} /></label>
-                  <label>Thought<textarea value={element.thought ?? ""} placeholder="What is the character thinking?" onChange={(event) => updateElement({ ...element, thought: event.target.value })} /></label>
-                  <label>Caption<textarea value={element.caption ?? ""} placeholder="Narration beneath the panel" onChange={(event) => updateElement({ ...element, caption: event.target.value })} /></label>
-                  <label>Learning moment<textarea value={element.teachingNote ?? ""} placeholder="What should the learner notice here?" onChange={(event) => updateElement({ ...element, teachingNote: event.target.value })} /></label>
-                </div> : <label>Content<textarea value={element.body} placeholder="Write the learner-facing content" onChange={(event) => updateElement({ ...element, body: event.target.value })} /></label>}
-              </article>)}</div>}
+
+              {activeMission.elements.length === 0 ? <div className="empty-builder-state"><h3>Start with the situation</h3><p>Add a Story or Comic Panel that places the learner inside a real-world moment.</p></div> : <>
+                <div className="sequence-strip" role="list" aria-label="Mission sequence">
+                  {activeMission.elements.map((element, index) => <button type="button" role="listitem" key={element.id} className={element.id === selectedElement?.id ? "sequence-tile active" : "sequence-tile"} onClick={() => setSelectedElementId(element.id)}>
+                    <span className="sequence-tile-number">{index + 1}</span>
+                    {element.type === "Comic Panel" && imageSource(element) ? <img src={imageSource(element)} alt="" /> : <span className={`sequence-type-icon ${element.type.toLowerCase().replace(/\s+/g, "-")}`}>{element.type === "Comic Panel" ? "▧" : element.type.charAt(0)}</span>}
+                    <strong>{element.type}</strong>
+                    <small>{element.title || "Untitled"}</small>
+                  </button>)}
+                </div>
+
+                {selectedElement && <div className="focused-element-workspace">
+                  <div className="focused-element-header">
+                    <div><p className="eyebrow">Moment {selectedIndex + 1} of {activeMission.elements.length}</p><h3>{selectedElement.type}</h3><p>{elementSummary(selectedElement)}</p></div>
+                    <div className="element-actions"><button className="icon-button" onClick={() => moveElement(selectedElement.id, -1)} disabled={selectedIndex === 0} title="Move earlier">←</button><button className="icon-button" onClick={() => moveElement(selectedElement.id, 1)} disabled={selectedIndex === activeMission.elements.length - 1} title="Move later">→</button><button className="icon-button" onClick={() => duplicateElement(selectedElement)} title="Duplicate">⧉</button><button className="danger-link" onClick={() => deleteElement(selectedElement.id)}>Delete</button></div>
+                  </div>
+
+                  <div className="focused-element-grid">
+                    <div className="focused-element-form">
+                      <label>Element type<select value={selectedElement.type} onChange={(event) => updateElement({ ...selectedElement, type: event.target.value as MissionElementType })}>{elementTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+                      <label>Title<input value={selectedElement.title} onChange={(event) => updateElement({ ...selectedElement, title: event.target.value })} /></label>
+                      {selectedElement.type === "Comic Panel" ? <div className="comic-panel-fields">
+                        <div className="image-picker-block"><span className="field-label">Panel artwork</span><div className="image-picker-actions"><label className="secondary-button file-picker-button">Select image<input type="file" accept="image/*" onChange={(event) => void selectPanelImage(event, selectedElement)} /></label>{imageSource(selectedElement) && <button className="danger-link" type="button" onClick={() => removePanelImage(selectedElement)}>Remove image</button>}</div>{selectedElement.imageFileName && <small className="selected-file-name">Embedded: {selectedElement.imageFileName}</small>}<small>Large images are resized to fit within {MAX_IMAGE_DIMENSION}px before being saved.</small></div>
+                        <label>Or use an image URL<input type="url" value={selectedElement.imageUrl ?? ""} placeholder="https://example.com/panel.png" onChange={(event) => updateElement({ ...selectedElement, imageUrl: event.target.value, imageDataUrl: "", imageFileName: "" })} /></label>
+                        <label>Alternative text<input value={selectedElement.altText ?? ""} placeholder="Describe what the learner sees" onChange={(event) => updateElement({ ...selectedElement, altText: event.target.value })} /></label>
+                        <label>Dialogue<textarea value={selectedElement.dialogue ?? ""} placeholder="What does the character say?" onChange={(event) => updateElement({ ...selectedElement, dialogue: event.target.value })} /></label>
+                        <label>Thought<textarea value={selectedElement.thought ?? ""} placeholder="What is the character thinking?" onChange={(event) => updateElement({ ...selectedElement, thought: event.target.value })} /></label>
+                        <label>Caption<textarea value={selectedElement.caption ?? ""} placeholder="Narration beneath the panel" onChange={(event) => updateElement({ ...selectedElement, caption: event.target.value })} /></label>
+                        <label>Learning moment<textarea value={selectedElement.teachingNote ?? ""} placeholder="What should the learner notice here?" onChange={(event) => updateElement({ ...selectedElement, teachingNote: event.target.value })} /></label>
+                      </div> : <label>Content<textarea value={selectedElement.body} placeholder="Write the learner-facing content" onChange={(event) => updateElement({ ...selectedElement, body: event.target.value })} /></label>}
+                    </div>
+
+                    <aside className="focused-element-preview"><p className="eyebrow">This moment</p>{selectedElement.type === "Comic Panel" ? <ComicPanelPreview element={selectedElement} /> : <article className={`learner-element-preview ${selectedElement.type.toLowerCase().replace(/\s+/g, "-")}`}><p className="eyebrow">{selectedElement.type}</p>{selectedElement.title && <h3>{selectedElement.title}</h3>}{selectedElement.body ? <p>{selectedElement.body}</p> : <p className="preview-empty">No content yet.</p>}</article>}</aside>
+                  </div>
+
+                  <div className="focused-navigation"><button className="secondary-button" disabled={selectedIndex <= 0} onClick={() => setSelectedElementId(activeMission.elements[selectedIndex - 1]?.id ?? null)}>← Previous moment</button><span>{selectedIndex + 1} / {activeMission.elements.length}</span><button className="secondary-button" disabled={selectedIndex >= activeMission.elements.length - 1} onClick={() => setSelectedElementId(activeMission.elements[selectedIndex + 1]?.id ?? null)}>Next moment →</button></div>
+                </div>}
+              </>}
+              <div className="stage-actions"><button className="secondary-button" onClick={() => setAuthoringView("setup")}>← Mission setup</button><button className="primary-button" onClick={() => setAuthoringView("preview")}>Preview the mission →</button></div>
             </section>}
 
             {authoringView === "preview" && <section className="authoring-stage preview-stage">
