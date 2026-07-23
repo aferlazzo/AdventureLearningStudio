@@ -1,90 +1,241 @@
-import { useState } from "react";
-import { AppHeader } from "./components/AppHeader";
-import { LibraryPage } from "./pages/LibraryPage";
-import { WorkspacePage } from "./pages/WorkspacePage";
-import { loadAdventures, saveAdventures } from "./services/adventureStore";
-import type { Adventure } from "./models/adventure";
+import { useMemo, useState } from "react";
+
+type JourneyStage = "welcome" | "discovery" | "reflection";
+
+type DiscoveryPrompt = {
+  title: string;
+  guidance: string;
+  placeholder: string;
+};
+
+const prompts: DiscoveryPrompt[] = [
+  {
+    title: "What have you learned that changed you?",
+    guidance:
+      "Don't worry about organizing your thoughts or writing perfectly. Imagine we're talking over coffee. Tell me what happened.",
+    placeholder: "I learned..."
+  },
+  {
+    title: "I'd love to hear the story behind that.",
+    guidance:
+      "What was happening in your life? What made this lesson important, difficult, surprising, or useful?",
+    placeholder: "The story began when..."
+  },
+  {
+    title: "Who do you wish had known this sooner?",
+    guidance:
+      "Think of a real person, your younger self, or a group of people who could benefit from what you discovered.",
+    placeholder: "I wish this could help..."
+  },
+  {
+    title: "What usually goes wrong first?",
+    guidance:
+      "What do beginners misunderstand, avoid, or try too soon? What would you warn them about?",
+    placeholder: "A common mistake is..."
+  }
+];
+
+const emptyAnswers = prompts.map(() => "");
 
 export default function App() {
-  const [adventures, setAdventures] = useState<Adventure[]>(() => loadAdventures());
-  const [activeAdventureId, setActiveAdventureId] = useState<string | null>(null);
+  const [stage, setStage] = useState<JourneyStage>("welcome");
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<string[]>(emptyAnswers);
 
-  const activeAdventure = adventures.find(
-    (adventure) => adventure.id === activeAdventureId
-  );
+  const currentAnswer = answers[step] ?? "";
+  const canContinue = currentAnswer.trim().length > 0;
 
-  function persist(next: Adventure[]) {
-    setAdventures(next);
-    saveAdventures(next);
-  }
+  const progressMessage = useMemo(() => {
+    const messages = [
+      "Let's begin with your experience.",
+      "We're beginning to understand your story.",
+      "Now we're discovering who this could help.",
+      "We're finding the lessons hidden inside your experience."
+    ];
 
-  function updateAdventure(updated: Adventure) {
-    persist(
-      adventures.map((item) => (item.id === updated.id ? updated : item))
+    return messages[step];
+  }, [step]);
+
+  function updateCurrentAnswer(value: string) {
+    setAnswers((current) =>
+      current.map((answer, index) => (index === step ? value : answer))
     );
   }
 
-  function createAdventure() {
-    const now = new Date().toISOString();
+  function continueDiscovery() {
+    if (!canContinue) return;
 
-    const adventure: Adventure = {
-      id: crypto.randomUUID(),
-      title: "Untitled Adventure",
-      summary: "A new Adventure ready to be developed.",
-      author: "Anthony Ferlazzo",
-      created: now,
-      updated: now,
-      status: "draft",
-      version: 1,
-      tags: [],
-      domain: "General",
+    if (step === prompts.length - 1) {
+      setStage("reflection");
+      return;
+    }
 
-      purpose: "",
-      audience: "",
-      confidenceOutcome: "",
-
-      missions: [],
-
-      notes: [],
-      activity: ["Adventure created"]
-    };
-
-    persist([adventure, ...adventures]);
-    setActiveAdventureId(adventure.id);
+    setStep((current) => current + 1);
   }
 
-  function deleteAdventure(id: string) {
-    const adventure = adventures.find((item) => item.id === id);
-    if (!adventure) return;
+  function goBack() {
+    if (step === 0) {
+      setStage("welcome");
+      return;
+    }
 
-    const confirmed = window.confirm(
-      `Delete "${adventure.title}"? This cannot be undone.`
+    setStep((current) => current - 1);
+  }
+
+  function restart() {
+    setAnswers(emptyAnswers);
+    setStep(0);
+    setStage("welcome");
+  }
+
+  if (stage === "welcome") {
+    return (
+      <main className="journey-shell welcome-shell">
+        <section className="welcome-page" aria-labelledby="welcome-title">
+          <p className="brand-kicker">Adventure Learning Studio</p>
+          <h1 id="welcome-title">Everyone has something worth teaching.</h1>
+          <p className="welcome-promise">We'll help you teach it.</p>
+
+          <div className="welcome-body">
+            <h2>What have you learned in life that could help someone else?</h2>
+            <p>
+              You don't need teaching experience, an outline, or perfectly written
+              ideas. You only need something you've learned through experience.
+            </p>
+            <ul>
+              <li>How to become more confident behind the wheel</li>
+              <li>How to care for a new puppy</li>
+              <li>How to grow tomatoes in a difficult climate</li>
+              <li>How to repair a bicycle</li>
+              <li>How to comfort a frightened child</li>
+              <li>How to start a small business</li>
+            </ul>
+          </div>
+
+          <button
+            className="journey-button journey-button-primary"
+            type="button"
+            onClick={() => setStage("discovery")}
+          >
+            Let's Begin
+          </button>
+
+          <p className="welcome-note">Your experience is the starting point.</p>
+        </section>
+      </main>
     );
-
-    if (!confirmed) return;
-
-    persist(adventures.filter((item) => item.id !== id));
-    setActiveAdventureId(null);
   }
+
+  if (stage === "reflection") {
+    return (
+      <main className="journey-shell">
+        <section className="conversation-card reflection-card" aria-labelledby="reflection-title">
+          <p className="conversation-progress">I think I understand...</p>
+          <h1 id="reflection-title">Your experience contains something worth sharing.</h1>
+          <p className="reflection-intro">
+            Here is the beginning of the learning experience I hear in your story.
+          </p>
+
+          <dl className="reflection-list">
+            <div>
+              <dt>What changed you</dt>
+              <dd>{answers[0]}</dd>
+            </div>
+            <div>
+              <dt>The story behind it</dt>
+              <dd>{answers[1]}</dd>
+            </div>
+            <div>
+              <dt>Who this could help</dt>
+              <dd>{answers[2]}</dd>
+            </div>
+            <div>
+              <dt>Where beginners struggle</dt>
+              <dd>{answers[3]}</dd>
+            </div>
+          </dl>
+
+          <div className="reflection-callout">
+            <h2>I can see the beginnings of several Learning Adventures.</h2>
+            <p>
+              The next step will be identifying the recurring ideas and organizing
+              them without losing your voice or ownership.
+            </p>
+          </div>
+
+          <div className="conversation-actions">
+            <button
+              className="journey-button journey-button-secondary"
+              type="button"
+              onClick={() => {
+                setStep(prompts.length - 1);
+                setStage("discovery");
+              }}
+            >
+              Review My Answers
+            </button>
+            <button
+              className="journey-button journey-button-primary"
+              type="button"
+              onClick={() => window.alert("Organization is the next ALS journey phase.")}
+            >
+              Show Me
+            </button>
+          </div>
+
+          <button className="text-button" type="button" onClick={restart}>
+            Start a different story
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  const prompt = prompts[step];
 
   return (
-    <>
-      <AppHeader onHome={() => setActiveAdventureId(null)} />
+    <main className="journey-shell">
+      <section className="conversation-card" aria-labelledby="conversation-title">
+        <div className="conversation-topline">
+          <p className="brand-kicker">Adventure Learning Studio</p>
+          <p className="conversation-count">
+            Conversation {step + 1} of {prompts.length}
+          </p>
+        </div>
 
-      {activeAdventure ? (
-        <WorkspacePage
-          adventure={activeAdventure}
-          onBack={() => setActiveAdventureId(null)}
-          onDelete={deleteAdventure}
-          onUpdate={updateAdventure}
+        <p className="conversation-progress">{progressMessage}</p>
+        <h1 id="conversation-title">{prompt.title}</h1>
+        <p className="conversation-guidance">{prompt.guidance}</p>
+
+        <label className="sr-only" htmlFor="discovery-answer">
+          Your response
+        </label>
+        <textarea
+          id="discovery-answer"
+          value={currentAnswer}
+          placeholder={prompt.placeholder}
+          onChange={(event) => updateCurrentAnswer(event.target.value)}
+          autoFocus
         />
-      ) : (
-        <LibraryPage
-          adventures={adventures}
-          onOpen={setActiveAdventureId}
-          onCreate={createAdventure}
-        />
-      )}
-    </>
+
+        <div className="conversation-actions">
+          <button
+            className="journey-button journey-button-secondary"
+            type="button"
+            onClick={goBack}
+          >
+            Back
+          </button>
+          <button
+            className="journey-button journey-button-primary"
+            type="button"
+            disabled={!canContinue}
+            onClick={continueDiscovery}
+          >
+            Continue
+          </button>
+        </div>
+      </section>
+    </main>
   );
 }
