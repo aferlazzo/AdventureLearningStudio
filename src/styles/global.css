@@ -152,6 +152,16 @@ textarea:focus-visible {
   color: #394445;
 }
 
+.danger-button {
+  border-color: #a3453d;
+  background: #a3453d;
+  color: white;
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #89372f;
+}
+
 .journey-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
@@ -279,6 +289,50 @@ textarea::placeholder {
   margin: 0;
 }
 
+.resume-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: -12px 0 30px;
+  padding: 14px 16px;
+  border: 1px solid #bdd0c4;
+  border-radius: 14px;
+  background: #edf5ef;
+  color: #355247;
+  text-align: left;
+}
+
+.resume-notice span {
+  color: #5c6b64;
+}
+
+.resume-notice button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #2b5b5c;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.save-status {
+  margin: 16px 0 0;
+  color: #65716d;
+  font-size: 0.88rem;
+  text-align: right;
+}
+
+.save-status.saving {
+  color: #80755f;
+}
+
+.save-status.unavailable {
+  color: #9a3f36;
+  font-weight: 700;
+}
+
 .text-button {
   display: block;
   margin: 24px auto 0;
@@ -287,6 +341,28 @@ textarea::placeholder {
   color: #5c6c6c;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+.restart-confirmation {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #ddc9c2;
+  border-radius: 14px;
+  background: #fff8f5;
+  text-align: left;
+}
+
+.restart-confirmation p {
+  margin: 0;
+  color: #5e4b45;
+  line-height: 1.5;
+}
+
+.restart-confirmation > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .sr-only {
@@ -336,6 +412,14 @@ textarea::placeholder {
   textarea {
     min-height: 210px;
   }
+
+  .resume-notice {
+    align-items: flex-start;
+  }
+
+  .restart-confirmation > div {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 430px) {
@@ -367,5 +451,19 @@ textarea::placeholder {
   .conversation-actions .journey-button {
     flex: 1;
     padding-inline: 14px;
+  }
+
+  .resume-notice {
+    display: block;
+    margin-top: 0;
+  }
+
+  .resume-notice button {
+    margin-top: 10px;
+    padding: 0;
+  }
+
+  .save-status {
+    text-align: center;
   }
 }
