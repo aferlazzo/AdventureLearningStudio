@@ -1,3 +1,5 @@
+import "../styles/welcome.css";
+
 type WelcomePageProps = {
   onBegin: () => void;
 };
