@@ -312,9 +312,31 @@ export default function App() {
           <div className="reflection-callout">
             <h2>Our promise</h2>
             <p>
-              Valuable knowledge should not disappear simply because the person who
-              possesses it does not think of themselves as a teacher. Every Learning
-              Adventure begins with one simple question: <strong>What have you learned that changed you?</strong>
+              We'll never replace your voice or tell your story for you. We'll help you
+              discover it, organize it, and share it with others.
+            </p>
+          </div>
+
+          <div className="reflection-callout" style={{ marginTop: "24px" }}>
+            <h2>What you'll leave with</h2>
+            <p>
+              By the end of this journey, you'll have created your first <strong>Learning
+              Adventure</strong>—something another person can use to gain confidence from
+              your experience.
+            </p>
+            <p>
+              But you'll leave with something else, too. You'll begin to see your own
+              experiences differently. What once felt like “just things that happened”
+              become lessons that can help someone else.
+            </p>
+            <p>
+              You'll discover that you know more than you realized, and you'll become a
+              better teacher because you'll better understand what you learned, why it
+              mattered, and how to share it.
+            </p>
+            <p>
+              You don't begin this journey because you're already an expert. You begin
+              because you've lived a life. <strong>That's enough.</strong>
             </p>
           </div>
 
@@ -368,11 +390,7 @@ export default function App() {
             >
               Back
             </button>
-            <button
-              className="journey-button journey-button-primary"
-              type="button"
-              disabled
-            >
+            <button className="journey-button journey-button-primary" type="button" disabled>
               Build My Adventures
             </button>
           </div>
