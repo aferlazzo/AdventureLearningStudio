@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type JourneyStage = "welcome" | "discovery" | "reflection" | "organization";
+type SaveStatus = "saving" | "saved" | "unavailable";
 
 type DiscoveryPrompt = {
   title: string;
@@ -77,20 +78,38 @@ function loadJourney(): SavedJourney {
   }
 }
 
+function hasMeaningfulDraft(journey: SavedJourney) {
+  return journey.stage !== "welcome" || journey.answers.some((answer) => answer.trim());
+}
+
 export default function App() {
   const savedJourney = useMemo(loadJourney, []);
+  const restoredDraft = useMemo(() => hasMeaningfulDraft(savedJourney), [savedJourney]);
+  const firstSave = useRef(true);
   const [stage, setStage] = useState<JourneyStage>(savedJourney.stage);
   const [step, setStep] = useState(savedJourney.step);
   const [answers, setAnswers] = useState<string[]>(savedJourney.answers);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
+  const [showResumeNotice, setShowResumeNotice] = useState(restoredDraft);
+  const [confirmRestart, setConfirmRestart] = useState(false);
 
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ stage, step, answers } satisfies SavedJourney)
-    );
-  } catch {
-    // The journey still works if browser storage is unavailable.
-  }
+  useEffect(() => {
+    if (!firstSave.current) setSaveStatus("saving");
+
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ stage, step, answers } satisfies SavedJourney)
+      );
+
+      const timer = window.setTimeout(() => setSaveStatus("saved"), 250);
+      firstSave.current = false;
+      return () => window.clearTimeout(timer);
+    } catch {
+      setSaveStatus("unavailable");
+      firstSave.current = false;
+    }
+  }, [stage, step, answers]);
 
   const currentAnswer = answers[step] ?? "";
   const canContinue = currentAnswer.trim().length > 0;
@@ -133,16 +152,72 @@ export default function App() {
   }
 
   function restart() {
-    window.localStorage.removeItem(STORAGE_KEY);
-    setAnswers(emptyAnswers);
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // State will still be cleared in this browser session.
+    }
+
+    setAnswers(prompts.map(() => ""));
     setStep(0);
     setStage("welcome");
+    setConfirmRestart(false);
+    setShowResumeNotice(false);
   }
+
+  function resumeJourney() {
+    setShowResumeNotice(false);
+    if (stage === "welcome") setStage("discovery");
+  }
+
+  const saveLabel =
+    saveStatus === "saving"
+      ? "Saving..."
+      : saveStatus === "saved"
+        ? "✓ Saved locally"
+        : "Local saving is unavailable";
+
+  const resumeNotice = showResumeNotice ? (
+    <aside className="resume-notice" role="status">
+      <div>
+        <strong>Welcome back.</strong>
+        <span> We restored your previous conversation.</span>
+      </div>
+      <button type="button" onClick={resumeJourney}>
+        Continue
+      </button>
+    </aside>
+  ) : null;
+
+  const restartControl = confirmRestart ? (
+    <div className="restart-confirmation" role="group" aria-label="Start a new story">
+      <p>
+        <strong>Start a new story?</strong> Your current local draft will be cleared.
+      </p>
+      <div>
+        <button
+          className="journey-button journey-button-secondary"
+          type="button"
+          onClick={() => setConfirmRestart(false)}
+        >
+          Keep This Draft
+        </button>
+        <button className="journey-button danger-button" type="button" onClick={restart}>
+          Clear Draft and Start Over
+        </button>
+      </div>
+    </div>
+  ) : (
+    <button className="text-button" type="button" onClick={() => setConfirmRestart(true)}>
+      Start a New Story
+    </button>
+  );
 
   if (stage === "welcome") {
     return (
       <main className="journey-shell welcome-shell">
         <section className="welcome-page" aria-labelledby="welcome-title">
+          {resumeNotice}
           <p className="brand-kicker">Adventure Learning Studio</p>
           <h1 id="welcome-title">Everyone has something worth teaching.</h1>
           <p className="welcome-promise">We'll help you teach it.</p>
@@ -168,10 +243,11 @@ export default function App() {
             type="button"
             onClick={() => setStage("discovery")}
           >
-            Let's Begin
+            {restoredDraft ? "Continue My Story" : "Let's Begin"}
           </button>
 
           <p className="welcome-note">Your experience is the starting point.</p>
+          {restoredDraft && restartControl}
         </section>
       </main>
     );
@@ -181,6 +257,7 @@ export default function App() {
     return (
       <main className="journey-shell">
         <section className="conversation-card reflection-card" aria-labelledby="organization-title">
+          {resumeNotice}
           <p className="conversation-progress">Wonderful.</p>
           <h1 id="organization-title">Let's find the shape inside your story.</h1>
           <p className="reflection-intro">
@@ -214,9 +291,8 @@ export default function App() {
             </button>
           </div>
 
-          <button className="text-button" type="button" onClick={restart}>
-            Start a different story
-          </button>
+          <p className={`save-status ${saveStatus}`} aria-live="polite">{saveLabel}</p>
+          {restartControl}
         </section>
       </main>
     );
@@ -226,6 +302,7 @@ export default function App() {
     return (
       <main className="journey-shell">
         <section className="conversation-card reflection-card" aria-labelledby="reflection-title">
+          {resumeNotice}
           <p className="conversation-progress">I think I understand...</p>
           <h1 id="reflection-title">Your experience contains something worth sharing.</h1>
           <p className="reflection-intro">
@@ -279,9 +356,8 @@ export default function App() {
             </button>
           </div>
 
-          <button className="text-button" type="button" onClick={restart}>
-            Start a different story
-          </button>
+          <p className={`save-status ${saveStatus}`} aria-live="polite">{saveLabel}</p>
+          {restartControl}
         </section>
       </main>
     );
@@ -292,6 +368,7 @@ export default function App() {
   return (
     <main className="journey-shell">
       <section className="conversation-card" aria-labelledby="conversation-title">
+        {resumeNotice}
         <div className="conversation-topline">
           <p className="brand-kicker">Adventure Learning Studio</p>
           <p className="conversation-count">
@@ -311,7 +388,7 @@ export default function App() {
           value={currentAnswer}
           placeholder={prompt.placeholder}
           onChange={(event) => updateCurrentAnswer(event.target.value)}
-          autoFocus
+          autoFocus={!showResumeNotice}
         />
 
         <div className="conversation-actions">
@@ -331,6 +408,8 @@ export default function App() {
             Continue
           </button>
         </div>
+
+        <p className={`save-status ${saveStatus}`} aria-live="polite">{saveLabel}</p>
       </section>
     </main>
   );
