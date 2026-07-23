@@ -8,6 +8,14 @@ type DiscoveryPrompt = {
   placeholder: string;
 };
 
+type SavedJourney = {
+  stage: JourneyStage;
+  step: number;
+  answers: string[];
+};
+
+const STORAGE_KEY = "als-discovery-journey";
+
 const prompts: DiscoveryPrompt[] = [
   {
     title: "What have you learned that changed you?",
@@ -37,10 +45,52 @@ const prompts: DiscoveryPrompt[] = [
 
 const emptyAnswers = prompts.map(() => "");
 
+function loadJourney(): SavedJourney {
+  const fallback: SavedJourney = {
+    stage: "welcome",
+    step: 0,
+    answers: emptyAnswers
+  };
+
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (!saved) return fallback;
+
+    const parsed = JSON.parse(saved) as Partial<SavedJourney>;
+    const answers = Array.isArray(parsed.answers)
+      ? prompts.map((_, index) => String(parsed.answers?.[index] ?? ""))
+      : emptyAnswers;
+    const step = Math.min(Math.max(Number(parsed.step) || 0, 0), prompts.length - 1);
+    const validStages: JourneyStage[] = [
+      "welcome",
+      "discovery",
+      "reflection",
+      "organization"
+    ];
+    const stage = validStages.includes(parsed.stage as JourneyStage)
+      ? (parsed.stage as JourneyStage)
+      : "welcome";
+
+    return { stage, step, answers };
+  } catch {
+    return fallback;
+  }
+}
+
 export default function App() {
-  const [stage, setStage] = useState<JourneyStage>("welcome");
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(emptyAnswers);
+  const savedJourney = useMemo(loadJourney, []);
+  const [stage, setStage] = useState<JourneyStage>(savedJourney.stage);
+  const [step, setStep] = useState(savedJourney.step);
+  const [answers, setAnswers] = useState<string[]>(savedJourney.answers);
+
+  try {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ stage, step, answers } satisfies SavedJourney)
+    );
+  } catch {
+    // The journey still works if browser storage is unavailable.
+  }
 
   const currentAnswer = answers[step] ?? "";
   const canContinue = currentAnswer.trim().length > 0;
@@ -83,6 +133,7 @@ export default function App() {
   }
 
   function restart() {
+    window.localStorage.removeItem(STORAGE_KEY);
     setAnswers(emptyAnswers);
     setStep(0);
     setStage("welcome");
