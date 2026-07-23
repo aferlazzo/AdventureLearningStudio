@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-type JourneyStage = "welcome" | "discovery" | "reflection";
+type JourneyStage = "welcome" | "discovery" | "reflection" | "organization";
 
 type DiscoveryPrompt = {
   title: string;
@@ -126,6 +126,51 @@ export default function App() {
     );
   }
 
+  if (stage === "organization") {
+    return (
+      <main className="journey-shell">
+        <section className="conversation-card reflection-card" aria-labelledby="organization-title">
+          <p className="conversation-progress">Wonderful.</p>
+          <h1 id="organization-title">Let's find the shape inside your story.</h1>
+          <p className="reflection-intro">
+            I can already see several themes emerging from what you shared. The next
+            step is to organize them into Learning Adventures without losing your
+            voice or ownership.
+          </p>
+
+          <div className="reflection-callout">
+            <h2>Organization is the next ALS journey phase.</h2>
+            <p>
+              This first version now carries you here naturally instead of interrupting
+              you with a browser pop-up.
+            </p>
+          </div>
+
+          <div className="conversation-actions">
+            <button
+              className="journey-button journey-button-secondary"
+              type="button"
+              onClick={() => setStage("reflection")}
+            >
+              Back
+            </button>
+            <button
+              className="journey-button journey-button-primary"
+              type="button"
+              disabled
+            >
+              Build My Adventures
+            </button>
+          </div>
+
+          <button className="text-button" type="button" onClick={restart}>
+            Start a different story
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   if (stage === "reflection") {
     return (
       <main className="journey-shell">
@@ -177,7 +222,7 @@ export default function App() {
             <button
               className="journey-button journey-button-primary"
               type="button"
-              onClick={() => window.alert("Organization is the next ALS journey phase.")}
+              onClick={() => setStage("organization")}
             >
               Show Me
             </button>
