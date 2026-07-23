@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type JourneyStage = "welcome" | "discovery" | "reflection" | "organization";
+type JourneyStage = "welcome" | "why" | "discovery" | "reflection" | "organization";
 type SaveStatus = "saving" | "saved" | "unavailable";
 
 type DiscoveryPrompt = {
@@ -64,6 +64,7 @@ function loadJourney(): SavedJourney {
     const step = Math.min(Math.max(Number(parsed.step) || 0, 0), prompts.length - 1);
     const validStages: JourneyStage[] = [
       "welcome",
+      "why",
       "discovery",
       "reflection",
       "organization"
@@ -79,7 +80,10 @@ function loadJourney(): SavedJourney {
 }
 
 function hasMeaningfulDraft(journey: SavedJourney) {
-  return journey.stage !== "welcome" || journey.answers.some((answer) => answer.trim());
+  return (
+    (journey.stage !== "welcome" && journey.stage !== "why") ||
+    journey.answers.some((answer) => answer.trim())
+  );
 }
 
 export default function App() {
@@ -167,7 +171,7 @@ export default function App() {
 
   function resumeJourney() {
     setShowResumeNotice(false);
-    if (stage === "welcome") setStage("discovery");
+    if (stage === "welcome" || stage === "why") setStage("discovery");
   }
 
   const saveLabel =
@@ -246,9 +250,91 @@ export default function App() {
             {restoredDraft ? "Continue My Story" : "Let's Begin"}
           </button>
 
+          <button className="text-button" type="button" onClick={() => setStage("why")}>
+            Why?
+          </button>
           <p className="welcome-note">Your experience is the starting point.</p>
           {restoredDraft && restartControl}
         </section>
+      </main>
+    );
+  }
+
+  if (stage === "why") {
+    return (
+      <main className="journey-shell">
+        <article className="conversation-card reflection-card" aria-labelledby="why-title">
+          {resumeNotice}
+          <p className="brand-kicker">Adventure Learning Studio</p>
+          <h1 id="why-title">Why?</h1>
+          <p className="reflection-intro">
+            Because the world's most valuable knowledge isn't always found in classrooms
+            or textbooks. It's found in people.
+          </p>
+
+          <div className="reflection-list">
+            <div>
+              <dt>This is personal.</dt>
+              <dd>
+                Every Learning Adventure begins with something you experienced, something
+                that frustrated you, something that changed you, something you finally
+                figured out, or something you wish someone had told you sooner. ALS begins
+                by asking about your life because that's where your most valuable lessons
+                are found.
+              </dd>
+            </div>
+            <div>
+              <dt>Everyone has something worth teaching.</dt>
+              <dd>
+                You don't need a teaching degree or a formal title. If you've learned
+                something that could help another person, you already have the beginning
+                of a Learning Adventure.
+              </dd>
+            </div>
+            <div>
+              <dt>We'll help you teach it.</dt>
+              <dd>
+                You don't need an outline or knowledge of course design. Tell your story.
+                ALS will help you discover the ideas, lessons, and experiences others can
+                learn from.
+              </dd>
+            </div>
+            <div>
+              <dt>You decide. I remember.</dt>
+              <dd>
+                You remain the author. You decide what matters, what changes, and what gets
+                published. ALS remembers what you've shared, helps organize your thinking,
+                and supports your decisions without taking ownership away from you.
+              </dd>
+            </div>
+          </div>
+
+          <div className="reflection-callout">
+            <h2>Our promise</h2>
+            <p>
+              Valuable knowledge should not disappear simply because the person who
+              possesses it does not think of themselves as a teacher. Every Learning
+              Adventure begins with one simple question: <strong>What have you learned that changed you?</strong>
+            </p>
+          </div>
+
+          <div className="conversation-actions">
+            <button
+              className="journey-button journey-button-secondary"
+              type="button"
+              onClick={() => setStage("welcome")}
+            >
+              Back
+            </button>
+            <button
+              className="journey-button journey-button-primary"
+              type="button"
+              onClick={() => setStage("discovery")}
+            >
+              {restoredDraft ? "Continue My Story" : "Let's Begin"}
+            </button>
+          </div>
+        </article>
       </main>
     );
   }
