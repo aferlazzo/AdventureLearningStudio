@@ -1,0 +1,246 @@
+.studio-home {
+  padding-top: 30px;
+}
+
+.studio-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+  gap: 22px;
+  margin-bottom: 34px;
+}
+
+.studio-hero-copy,
+.studio-method-card,
+.empty-library-state {
+  background: #ffffff;
+  border: 1px solid #d8dee8;
+  border-radius: 16px;
+}
+
+.studio-hero-copy {
+  padding: clamp(28px, 5vw, 54px);
+  background:
+    radial-gradient(circle at top right, rgba(35, 87, 215, .12), transparent 35%),
+    #ffffff;
+}
+
+.studio-hero-copy h1 {
+  max-width: 760px;
+  margin: 10px 0 18px;
+  font-size: clamp(2.25rem, 5vw, 4.25rem);
+  line-height: 1.03;
+  letter-spacing: -.045em;
+}
+
+.studio-lead {
+  max-width: 710px;
+  margin: 0;
+  color: #526071;
+  font-size: clamp(1.05rem, 2vw, 1.28rem);
+  line-height: 1.65;
+}
+
+.studio-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  color: #667085;
+}
+
+.studio-primary-action {
+  padding: 13px 18px;
+  font-size: 1rem;
+}
+
+.studio-method-card {
+  padding: 26px;
+  align-self: stretch;
+}
+
+.studio-method-card ol {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: method;
+}
+
+.studio-method-card li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid #edf0f4;
+  counter-increment: method;
+}
+
+.studio-method-card li:last-child {
+  border-bottom: 0;
+}
+
+.studio-method-card li::before {
+  content: counter(method);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e8efff;
+  color: #2357d7;
+  font-weight: 800;
+}
+
+.studio-method-card strong,
+.studio-method-card span {
+  grid-column: 2;
+}
+
+.studio-method-card strong {
+  margin-bottom: -8px;
+}
+
+.studio-method-card span {
+  color: #667085;
+  line-height: 1.4;
+}
+
+.library-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.library-section-heading h2 {
+  margin: 4px 0 6px;
+  font-size: 1.7rem;
+}
+
+.library-section-heading p {
+  margin: 0;
+  color: #667085;
+}
+
+.studio-adventure-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 340px;
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(31, 41, 55, .06);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.studio-adventure-card:hover {
+  transform: translateY(-2px);
+  border-color: #aebbd0;
+  box-shadow: 0 16px 38px rgba(31, 41, 55, .1);
+}
+
+.adventure-card-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.updated-label {
+  color: #7b8794;
+  font-size: .82rem;
+}
+
+.adventure-card-copy {
+  margin-top: 24px;
+}
+
+.adventure-card-copy h2 {
+  margin: 7px 0 10px;
+  font-size: 1.65rem;
+}
+
+.adventure-card-copy > p:last-child {
+  margin: 0;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.adventure-card-stats {
+  display: flex;
+  gap: 28px;
+  margin: 24px 0 8px;
+  padding: 17px 0;
+  border-top: 1px solid #edf0f4;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.adventure-card-stats div {
+  display: grid;
+  gap: 2px;
+}
+
+.adventure-card-stats strong {
+  font-size: 1.35rem;
+}
+
+.adventure-card-stats span {
+  color: #667085;
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+}
+
+.open-adventure-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: auto;
+  padding: 11px 14px;
+}
+
+.empty-library-state {
+  max-width: 720px;
+  padding: 38px;
+}
+
+.empty-library-state h2 {
+  margin: 6px 0 10px;
+}
+
+.empty-library-state p {
+  max-width: 620px;
+  color: #667085;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .studio-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .studio-home {
+    padding-top: 16px;
+  }
+
+  .studio-hero-copy,
+  .studio-method-card,
+  .empty-library-state {
+    padding: 22px;
+  }
+
+  .studio-hero-copy h1 {
+    font-size: 2.35rem;
+  }
+
+  .adventure-card-topline,
+  .library-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

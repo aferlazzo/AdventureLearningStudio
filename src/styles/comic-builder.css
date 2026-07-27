@@ -1,0 +1,297 @@
+.mission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mission-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d8dee8;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+}
+
+.mission-list-item.active {
+  border-color: #2357d7;
+  background: #eef4ff;
+}
+
+.mission-editor label,
+.adventure-overview label {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+.mission-editor input,
+.mission-editor textarea,
+.mission-editor select,
+.adventure-overview textarea {
+  width: 100%;
+  border: 1px solid #bac3cf;
+  border-radius: 8px;
+  padding: 10px 11px;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+}
+
+.mission-editor textarea,
+.adventure-overview textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.mission-editor-header,
+.element-builder-heading,
+.element-card-toolbar,
+.add-element-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.danger-link {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  font-weight: 750;
+  padding: 4px;
+}
+
+.add-element-bar {
+  justify-content: flex-start;
+  padding: 12px;
+  margin: 14px 0 18px;
+  border-radius: 10px;
+  background: #f4f6f9;
+}
+
+.add-element-bar select {
+  width: auto;
+  min-width: 170px;
+}
+
+.empty-builder-state {
+  padding: 28px;
+  border: 2px dashed #cbd3dd;
+  border-radius: 12px;
+  text-align: center;
+  color: #667085;
+}
+
+.builder-with-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, .8fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.element-editor-list {
+  display: grid;
+  gap: 14px;
+}
+
+.element-editor-card {
+  padding: 16px;
+  border: 1px solid #d8dee8;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.element-card-toolbar {
+  margin-bottom: 14px;
+}
+
+.element-card-toolbar > div,
+.element-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.element-order {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: #e8edf5;
+  font-weight: 800;
+}
+
+.icon-button {
+  min-width: 31px;
+  min-height: 31px;
+  border: 1px solid #c8d0da;
+  border-radius: 7px;
+  background: #fff;
+  font-weight: 800;
+}
+
+.comic-panel-fields {
+  padding: 14px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border-left: 5px solid #a16207;
+}
+
+.mission-preview-pane {
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid #cfd7e2;
+  border-radius: 12px;
+  background: #f6f8fb;
+}
+
+.preview-sticky-heading {
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #d8dee8;
+}
+
+.preview-sticky-heading h2 {
+  margin-bottom: 0;
+}
+
+.comic-preview-card,
+.learner-element-preview {
+  margin-bottom: 14px;
+  overflow: hidden;
+  border: 1px solid #cfd7e2;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.comic-preview-image {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+  background: #e8edf3;
+}
+
+.comic-preview-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.comic-image-placeholder {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  min-height: 220px;
+  padding: 20px;
+  text-align: center;
+  color: #667085;
+}
+
+.comic-image-placeholder span {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.speech-bubble,
+.thought-bubble {
+  position: absolute;
+  max-width: 70%;
+  padding: 10px 12px;
+  border: 2px solid #1f2937;
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .16);
+}
+
+.speech-bubble {
+  left: 12px;
+  bottom: 12px;
+  border-radius: 18px 18px 18px 4px;
+}
+
+.thought-bubble {
+  right: 12px;
+  top: 12px;
+  border-radius: 999px;
+  font-style: italic;
+}
+
+.comic-preview-copy,
+.comic-teaching-note,
+.learner-element-preview {
+  padding: 13px;
+}
+
+.comic-preview-copy h3,
+.comic-preview-copy p,
+.comic-teaching-note p,
+.learner-element-preview h3,
+.learner-element-preview p {
+  margin-top: 0;
+}
+
+.comic-teaching-note {
+  border-top: 1px solid #ead79b;
+  background: #fffbeb;
+}
+
+.learner-element-preview.warning {
+  border-left: 5px solid #b42318;
+}
+
+.learner-element-preview.tip {
+  border-left: 5px solid #25855a;
+}
+
+.learner-element-preview.instruction {
+  border-left: 5px solid #2357d7;
+}
+
+.learner-element-preview.question {
+  border-left: 5px solid #6d5bd0;
+}
+
+.preview-empty {
+  color: #777;
+  font-style: italic;
+}
+
+@media (max-width: 1180px) {
+  .builder-with-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-preview-pane {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .mission-editor-header,
+  .element-builder-heading,
+  .element-card-toolbar,
+  .add-element-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .element-card-toolbar > div,
+  .element-actions {
+    flex-wrap: wrap;
+  }
+
+  .add-element-bar select {
+    width: 100%;
+  }
+}
