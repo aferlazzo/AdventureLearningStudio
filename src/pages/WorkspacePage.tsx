@@ -42,7 +42,7 @@ export function WorkspacePage({
     const mission: Mission = {
       id: crypto.randomUUID(),
       number: nextNumber,
-      title: "Untitled Mission",
+      title: "Untitled Skill",
       goal: "",
       realWorldAction: "",
       confidenceQuestion: "",
@@ -53,7 +53,7 @@ export function WorkspacePage({
       ...adventure,
       updated: new Date().toISOString(),
       missions: [...adventure.missions, mission],
-      activity: [`Mission ${nextNumber} created`, ...adventure.activity]
+      activity: [`Skill ${nextNumber} created`, ...adventure.activity]
     });
 
     setActiveMissionId(mission.id);
@@ -64,7 +64,7 @@ export function WorkspacePage({
     if (!mission) return;
 
     const confirmed = window.confirm(
-      `Delete Mission ${mission.number}: "${mission.title}"?`
+      `Delete Skill ${mission.number}: "${mission.title}"?`
     );
 
     if (!confirmed) return;
@@ -75,7 +75,7 @@ export function WorkspacePage({
       ...adventure,
       updated: new Date().toISOString(),
       missions: remaining,
-      activity: [`Mission ${mission.number} deleted`, ...adventure.activity]
+      activity: [`Skill ${mission.number} deleted`, ...adventure.activity]
     });
 
     setActiveMissionId(remaining[0]?.id ?? null);
@@ -159,7 +159,7 @@ export function WorkspacePage({
 
       <section className="workspace-grid mission-workspace">
         <aside className="panel mission-list">
-          <h2>Missions</h2>
+          <h2>Skills</h2>
 
           {adventure.missions.map((mission) => (
             <button
@@ -171,13 +171,13 @@ export function WorkspacePage({
               }
               onClick={() => setActiveMissionId(mission.id)}
             >
-              <strong>Mission {String(mission.number).padStart(2, "0")}</strong>
+              <strong>Skill {String(mission.number).padStart(2, "0")}</strong>
               <span>{mission.title}</span>
             </button>
           ))}
 
           <button className="primary-button" onClick={addMission}>
-            + Add Mission
+            + Add Skill
           </button>
         </aside>
 
@@ -187,7 +187,7 @@ export function WorkspacePage({
               <div className="mission-editor-header">
                 <div>
                   <p className="eyebrow">
-                    Mission {String(activeMission.number).padStart(2, "0")}
+                    Skill {String(activeMission.number).padStart(2, "0")}
                   </p>
                   <h2>{activeMission.title}</h2>
                 </div>
@@ -196,7 +196,7 @@ export function WorkspacePage({
                   className="danger-link"
                   onClick={() => deleteMission(activeMission.id)}
                 >
-                  Delete Mission
+                  Delete Skill
                 </button>
               </div>
 
@@ -254,10 +254,10 @@ export function WorkspacePage({
 
               <hr />
 
-              <h2>Mission Elements</h2>
+              <h2>Skill Elements</h2>
 
               {activeMission.elements.length === 0 ? (
-                <p>No Mission Elements yet.</p>
+                <p>No Skill Elements yet.</p>
               ) : (
                 activeMission.elements.map((element) => (
                   <article className="mission-element-card" key={element.id}>
@@ -269,7 +269,7 @@ export function WorkspacePage({
               )}
             </>
           ) : (
-            <p>Create a Mission to begin authoring.</p>
+            <p>Create a Skill to begin authoring.</p>
           )}
         </section>
 
