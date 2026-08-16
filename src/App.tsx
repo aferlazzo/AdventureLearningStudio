@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { AppHeader } from "./components/AppHeader";
 import { LibraryPage } from "./pages/LibraryPage";
+import { WelcomePage } from "./pages/WelcomePage";
 import { WorkspacePage } from "./pages/WorkspacePage";
 import { loadAdventures, saveAdventures } from "./services/adventureStore";
 import type { Adventure } from "./models/adventure";
 
 export default function App() {
+  const [hasBegun, setHasBegun] = useState(false);
   const [adventures, setAdventures] = useState<Adventure[]>(() => loadAdventures());
   const [activeAdventureId, setActiveAdventureId] = useState<string | null>(null);
 
@@ -19,14 +21,11 @@ export default function App() {
   }
 
   function updateAdventure(updated: Adventure) {
-    persist(
-      adventures.map((item) => (item.id === updated.id ? updated : item))
-    );
+    persist(adventures.map((item) => (item.id === updated.id ? updated : item)));
   }
 
   function createAdventure() {
     const now = new Date().toISOString();
-
     const adventure: Adventure = {
       id: crypto.randomUUID(),
       title: "Untitled Adventure",
@@ -38,13 +37,10 @@ export default function App() {
       version: 1,
       tags: [],
       domain: "General",
-
       purpose: "",
       audience: "",
       confidenceOutcome: "",
-
       missions: [],
-
       notes: [],
       activity: ["Adventure created"]
     };
@@ -60,17 +56,19 @@ export default function App() {
     const confirmed = window.confirm(
       `Delete "${adventure.title}"? This cannot be undone.`
     );
-
     if (!confirmed) return;
 
     persist(adventures.filter((item) => item.id !== id));
     setActiveAdventureId(null);
   }
 
+  if (!hasBegun) {
+    return <WelcomePage onBegin={() => setHasBegun(true)} />;
+  }
+
   return (
     <>
       <AppHeader onHome={() => setActiveAdventureId(null)} />
-
       {activeAdventure ? (
         <WorkspacePage
           adventure={activeAdventure}
