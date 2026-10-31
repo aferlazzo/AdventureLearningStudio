@@ -105,6 +105,12 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
   const [imageError, setImageError] = useState("");
   const [adventureInfoOpen, setAdventureInfoOpen] = useState(false);
 
+  function goToSection(id: string) {
+    window.requestAnimationFrame(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   const activeMission = adventure.missions.find((mission) => mission.id === activeMissionId) ?? adventure.missions[0];
   const completion = activeMission ? missionCompletion(activeMission) : null;
   const selectedElement = activeMission?.elements.find((element) => element.id === selectedElementId) ?? activeMission?.elements[0];
@@ -219,14 +225,91 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
 
   return (
     <main className="page-shell guided-workspace">
-      <section className="workspace-header">
-        <div><button className="link-button" onClick={onBack}>← Adventure Library</button><p className="eyebrow">Adventure Workspace</p><h1>{adventure.title}</h1><p>{adventure.summary}</p></div>
-        <div className="workspace-meta"><span className={`status-badge ${adventure.status}`}>{adventure.status}</span><span>Version {adventure.version}</span></div>
+      <section className="workspace-header author-orientation" aria-labelledby="workspace-purpose-title">
+        <div className="orientation-main">
+          <button className="link-button" onClick={onBack}>← Adventure Library</button>
+          <p className="eyebrow">Mission Builder</p>
+          <h1 id="workspace-purpose-title">Create and complete one learning mission.</h1>
+          <p className="workspace-purpose">
+            This page helps you define the mission, build the learner journey, preview the experience, and publish it.
+          </p>
+
+          <div className="you-are-here" aria-label="Current location">
+            <span>{adventure.title}</span>
+            <span aria-hidden="true">→</span>
+            <strong>
+              {activeMission
+                ? `Mission ${String(activeMission.number).padStart(2, "0")} — ${activeMission.title}`
+                : "No mission selected"}
+            </strong>
+          </div>
+
+          <nav className="workspace-map" aria-label="Where would you like to go?">
+            <span className="workspace-map-label">Looking for something else?</span>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => goToSection("mission-list")}
+              title="Choose a different mission or add a new one."
+            >
+              Mission List
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => {
+                setAdventureInfoOpen(true);
+                goToSection("adventure-overview");
+              }}
+              title="Review the Adventure purpose, audience, and confidence outcome."
+            >
+              Adventure Overview
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={!activeMission}
+              onClick={() => {
+                setAuthoringView("sequence");
+                goToSection("mission-editor");
+              }}
+              title="Build the story, comic panels, instruction, and practice sequence."
+            >
+              Build Mission
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={!activeMission}
+              onClick={() => {
+                setAuthoringView("preview");
+                goToSection("mission-editor");
+              }}
+              title="See the mission exactly as the learner will experience it."
+            >
+              Preview Mission
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              disabled={!activeMission}
+              onClick={publishHtml}
+              title="Download the current Adventure as a self-contained HTML page."
+            >
+              Publish
+            </button>
+          </nav>
+        </div>
+
+        <div className="workspace-meta" aria-label="Adventure status">
+          <span className={`status-badge ${adventure.status}`}>{adventure.status}</span>
+          <span>Version {adventure.version}</span>
+        </div>
       </section>
 
-      <section className="panel adventure-overview compact-overview">
+      <section id="adventure-overview" className="panel adventure-overview compact-overview">
         <button className="overview-toggle" onClick={() => setAdventureInfoOpen((open) => !open)} aria-expanded={adventureInfoOpen}>
-          <span><strong>Adventure foundation</strong><small>Purpose, audience, and confidence outcome</small></span><span>{adventureInfoOpen ? "Hide" : "Edit"}</span>
+          <span><strong>Adventure overview</strong><small>Purpose, audience, and confidence outcome</small></span><span>{adventureInfoOpen ? "Hide" : "Edit"}</span>
         </button>
         {adventureInfoOpen && <div className="overview-fields">
           <label>Purpose<textarea value={adventure.purpose} onChange={(event) => onUpdate({ ...adventure, purpose: event.target.value, updated: new Date().toISOString() })} /></label>
@@ -236,8 +319,8 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
       </section>
 
       <section className="workspace-grid mission-workspace">
-        <aside className="panel mission-list">
-          <div className="mission-list-heading"><div><p className="eyebrow">Adventure path</p><h2>Missions</h2></div><span>{adventure.missions.length}</span></div>
+        <aside id="mission-list" className="panel mission-list">
+          <div className="mission-list-heading"><div><p className="eyebrow">Choose what to work on</p><h2>Mission List</h2></div><span title="Total missions">{adventure.missions.length}</span></div>
           {adventure.missions.map((mission) => {
             const status = missionCompletion(mission);
             return <button key={mission.id} className={mission.id === activeMission?.id ? "mission-list-item active" : "mission-list-item"} onClick={() => chooseMission(mission.id)}>
@@ -248,7 +331,7 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
           <button className="primary-button add-mission-button" onClick={addMission}>+ Add Mission</button>
         </aside>
 
-        <section className="panel mission-editor guided-mission-editor">
+        <section id="mission-editor" className="panel mission-editor guided-mission-editor">
           {activeMission && completion ? <>
             <div className="mission-editor-header"><div><p className="eyebrow">Mission {String(activeMission.number).padStart(2, "0")}</p><h2>{activeMission.title}</h2></div><button className="danger-link" onClick={() => deleteMission(activeMission.id)}>Delete Mission</button></div>
 
@@ -326,7 +409,7 @@ export function WorkspacePage({ adventure, onBack, onDelete, onUpdate }: Workspa
         </section>
 
         <aside className="panel activity-panel guided-side-panel">
-          <h2>Mission readiness</h2>
+          <h2 title="Shows what remains before this mission is ready to publish.">Ready to publish?</h2>
           {completion ? <div className="readiness-list"><button onClick={() => setAuthoringView("setup")} className={completion.setup ? "complete" : ""}><span>{completion.setup ? "✓" : "○"}</span><span><strong>Clear goal</strong><small>Title and goal</small></span></button><button onClick={() => setAuthoringView("sequence")} className={completion.sequence ? "complete" : ""}><span>{completion.sequence ? "✓" : "○"}</span><span><strong>Learning journey</strong><small>{activeMission?.elements.length ?? 0} elements</small></span></button><button onClick={() => setAuthoringView("setup")} className={completion.practice ? "complete" : ""}><span>{completion.practice ? "✓" : "○"}</span><span><strong>Practice and confidence</strong><small>Real-world finish</small></span></button></div> : <p>Add a mission to begin.</p>}
           <hr /><h2>Publishing</h2><button className="primary-button" onClick={publishHtml} disabled={!activeMission}>Publish HTML</button><p className="autosave-note">Downloads a self-contained web page with selected comic images embedded.</p>
           <hr /><details><summary>Recent activity</summary><ul>{adventure.activity.slice(0, 8).map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul></details>

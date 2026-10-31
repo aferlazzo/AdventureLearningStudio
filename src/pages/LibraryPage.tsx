@@ -22,44 +22,145 @@ function formatUpdated(value: string): string {
   }).format(date);
 }
 
+function LibraryHelp() {
+  return (
+    <details style={{ position: "relative", alignSelf: "flex-start" }}>
+      <summary
+        className="link-button"
+        style={{ cursor: "pointer", listStyle: "none", whiteSpace: "nowrap" }}
+      >
+        <span aria-hidden="true">❓</span> What can I do here?
+      </summary>
+
+      <section
+        aria-label="What you can do on this page"
+        style={{
+          position: "absolute",
+          zIndex: 20,
+          top: "calc(100% + 0.75rem)",
+          right: 0,
+          width: "min(24rem, calc(100vw - 2rem))",
+          padding: "1rem 1.25rem",
+          border: "1px solid var(--border-color, #d7dce3)",
+          borderRadius: "0.75rem",
+          background: "var(--panel-background, #ffffff)",
+          boxShadow: "0 0.75rem 2rem rgba(0, 0, 0, 0.14)"
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>What can I do here?</h2>
+        <p>This is the starting point for your Adventures.</p>
+        <ul style={{ marginBottom: 0, paddingLeft: "1.25rem" }}>
+          <li>Continue the Adventure you worked on most recently.</li>
+          <li>Open another Adventure.</li>
+          <li>Create a new Adventure.</li>
+        </ul>
+      </section>
+    </details>
+  );
+}
+
 export function LibraryPage({ adventures, onOpen, onCreate }: LibraryPageProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AdventureStatus | "all">("all");
 
+  const sortedAdventures = useMemo(
+    () =>
+      [...adventures].sort(
+        (left, right) =>
+          new Date(right.updated).getTime() - new Date(left.updated).getTime()
+      ),
+    [adventures]
+  );
+
+  const mostRecentAdventure = sortedAdventures[0];
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return adventures
+
+    return sortedAdventures
       .filter((adventure) => status === "all" || adventure.status === status)
       .filter((adventure) =>
         [adventure.title, adventure.summary, adventure.domain, ...adventure.tags]
           .join(" ")
           .toLowerCase()
           .includes(term)
-      )
-      .sort(
-        (left, right) =>
-          new Date(right.updated).getTime() - new Date(left.updated).getTime()
       );
-  }, [adventures, search, status]);
+  }, [sortedAdventures, search, status]);
 
   const missionCount = adventures.reduce(
     (total, adventure) => total + adventure.missions.length,
     0
   );
 
+  const header = (
+    <header
+      className="library-section-heading"
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: "1rem"
+      }}
+    >
+      <div>
+        <p className="eyebrow">Adventure Learning Studio</p>
+        <h1>{adventures.length === 0 ? "Create your first learning adventure" : "Welcome back."}</h1>
+      </div>
+      <LibraryHelp />
+    </header>
+  );
+
+  if (adventures.length === 0) {
+    return (
+      <main className="page-shell studio-home">
+        {header}
+        <section className="empty-library-state">
+          <p>
+            Begin with one real-world skill. You can add missions, comic panels,
+            practice activities, and confidence checks as the Adventure grows.
+          </p>
+          <button className="primary-button" onClick={onCreate}>
+            + Create First Adventure
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="page-shell studio-home">
-      <section className="studio-hero">
-        <div className="studio-hero-copy">
-          <p className="eyebrow">Adventure Learning Studio</p>
-          <h1>Create comic-infused learning adventures.</h1>
-          <p className="studio-lead">
-            Turn real-world skills into short missions that combine story,
-            teaching, practice, and confidence.
-          </p>
+      {header}
+
+      {mostRecentAdventure && (
+        <section className="library-section-heading" aria-labelledby="continue-heading">
+          <div>
+            <p className="eyebrow">Here is where you left off</p>
+            <h2 id="continue-heading">{mostRecentAdventure.title}</h2>
+            <p>
+              Updated {formatUpdated(mostRecentAdventure.updated)} · {mostRecentAdventure.missions.length}{" "}
+              {mostRecentAdventure.missions.length === 1 ? "mission" : "missions"} · Status: {mostRecentAdventure.status}
+            </p>
+
+            <div className="studio-hero-actions">
+              <button
+                className="primary-button studio-primary-action"
+                onClick={() => onOpen(mostRecentAdventure.id)}
+              >
+                Continue <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="library-section-heading">
+        <div>
+          <p className="eyebrow">Choose what you would like to do</p>
+          <h2>Other things you can do</h2>
+          <p>Open another Adventure or begin a new one.</p>
 
           <div className="studio-hero-actions">
-            <button className="primary-button studio-primary-action" onClick={onCreate}>
+            <button className="primary-button" onClick={onCreate}>
               + New Adventure
             </button>
             <span>
@@ -68,23 +169,13 @@ export function LibraryPage({ adventures, onOpen, onCreate }: LibraryPageProps) 
             </span>
           </div>
         </div>
-
-        <aside className="studio-method-card" aria-label="Adventure Learning method">
-          <p className="eyebrow">The learning pattern</p>
-          <ol>
-            <li><strong>Story</strong><span>Make the situation relatable.</span></li>
-            <li><strong>Learn</strong><span>Explain what matters at the right moment.</span></li>
-            <li><strong>Practice</strong><span>Ask the learner to try it.</span></li>
-            <li><strong>Confidence</strong><span>Finish with “I can do this.”</span></li>
-          </ol>
-        </aside>
       </section>
 
       <section className="library-section-heading">
         <div>
           <p className="eyebrow">Your work</p>
-          <h2>Continue building</h2>
-          <p>Open an adventure and pick up where you left off.</p>
+          <h2>Your Adventures</h2>
+          <p>Choose any Adventure to open it.</p>
         </div>
       </section>
 
@@ -98,9 +189,7 @@ export function LibraryPage({ adventures, onOpen, onCreate }: LibraryPageProps) 
           />
           <select
             value={status}
-            onChange={(event) =>
-              setStatus(event.target.value as AdventureStatus | "all")
-            }
+            onChange={(event) => setStatus(event.target.value as AdventureStatus | "all")}
           >
             <option value="all">All statuses</option>
             <option value="draft">Draft</option>
@@ -115,12 +204,8 @@ export function LibraryPage({ adventures, onOpen, onCreate }: LibraryPageProps) 
           {filtered.map((adventure) => (
             <article className="library-card studio-adventure-card" key={adventure.id}>
               <div className="adventure-card-topline">
-                <span className={`status-badge ${adventure.status}`}>
-                  {adventure.status}
-                </span>
-                <span className="updated-label">
-                  Updated {formatUpdated(adventure.updated)}
-                </span>
+                <span className={`status-badge ${adventure.status}`}>{adventure.status}</span>
+                <span className="updated-label">Updated {formatUpdated(adventure.updated)}</span>
               </div>
 
               <div className="adventure-card-copy">
@@ -157,21 +242,9 @@ export function LibraryPage({ adventures, onOpen, onCreate }: LibraryPageProps) 
             </article>
           ))}
         </section>
-      ) : adventures.length === 0 ? (
-        <section className="empty-library-state">
-          <p className="eyebrow">Start here</p>
-          <h2>Create your first learning adventure</h2>
-          <p>
-            Begin with one real-world skill. You can add missions, comic panels,
-            practice activities, and confidence checks as the adventure grows.
-          </p>
-          <button className="primary-button" onClick={onCreate}>
-            + Create First Adventure
-          </button>
-        </section>
       ) : (
         <section className="empty-library-state">
-          <h2>No adventures match your search</h2>
+          <h2>No Adventures match your search</h2>
           <p>Try a different search term or status.</p>
         </section>
       )}
